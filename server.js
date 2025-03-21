@@ -20,6 +20,24 @@ const PORT = process.env.PORT || 3001;
 app.use(bodyParser.json());
 app.use(cors());
 
+// Servir archivos estáticos desde la carpeta dist (generada por Vite)
+// Con configuración explícita para los tipos MIME
+app.use(express.static('dist', {
+  setHeaders: (res, path) => {
+    // Establecer el tipo MIME correcto para archivos JavaScript
+    if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.mjs')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+    }
+  }
+}));
+
+// Headers de seguridad y rendimiento
+app.use((req, res, next) => {
+  // Prevenir que el navegador realice MIME-sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  next();
+});
+
 // Middleware para logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -264,6 +282,22 @@ const inicializarServidor = async () => {
     process.exit(1);
   }
 };
+
+// Ruta catch-all para enviar todas las solicitudes no-API al index.html
+// Esto permite que React Router maneje el enrutamiento del lado del cliente
+app.get('*', (req, res, next) => {
+  // Si la URL comienza con /api, pasar al siguiente middleware
+  if (req.url.startsWith('/api')) {
+    return next();
+  }
+  // De lo contrario, servir el index.html para que React Router maneje la ruta
+  res.sendFile('index.html', { root: 'dist' });
+});
+
+// Manejo de errores 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
+});
 
 // Iniciar el servidor
 inicializarServidor();
