@@ -92,7 +92,140 @@ const BankComparison = ({ results, onSelectBank }) => {
         Encuentra la mejor opción entre {results.length} bancos. Haz clic en los encabezados para ordenar la tabla.
       </p>
       
-      <div className="overflow-x-auto">
+      {/* Sort Controls for Mobile */}
+      <div className="flex flex-wrap items-center mb-4 sm:hidden">
+        <span className="mr-2 text-sm">Ordenar por:</span>
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => requestSort('monthlyPayment')}
+            className={`inline-flex items-center px-2 py-1 text-xs rounded border ${
+              sortConfig.key === 'monthlyPayment' ? 'bg-royal-black text-white border-royal-black' : 'border-royal-gray-300'
+            }`}
+          >
+            Pago Mensual
+            <motion.div 
+              className={`ml-1 ${sortConfig.key === 'monthlyPayment' ? 'text-white' : 'text-royal-gray-400'}`}
+              animate={{ 
+                rotate: sortConfig.key === 'monthlyPayment' && sortConfig.direction === 'descending' ? 180 : 0 
+              }}
+            >
+              <IoArrowUpOutline className="h-3 w-3" />
+            </motion.div>
+          </button>
+          
+          <button 
+            onClick={() => requestSort('tasa')}
+            className={`inline-flex items-center px-2 py-1 text-xs rounded border ${
+              sortConfig.key === 'tasa' ? 'bg-royal-black text-white border-royal-black' : 'border-royal-gray-300'
+            }`}
+          >
+            Tasa
+            <motion.div 
+              className={`ml-1 ${sortConfig.key === 'tasa' ? 'text-white' : 'text-royal-gray-400'}`}
+              animate={{ 
+                rotate: sortConfig.key === 'tasa' && sortConfig.direction === 'descending' ? 180 : 0 
+              }}
+            >
+              <IoArrowUpOutline className="h-3 w-3" />
+            </motion.div>
+          </button>
+          
+          <button 
+            onClick={() => requestSort('cat')}
+            className={`inline-flex items-center px-2 py-1 text-xs rounded border ${
+              sortConfig.key === 'cat' ? 'bg-royal-black text-white border-royal-black' : 'border-royal-gray-300'
+            }`}
+          >
+            CAT
+            <motion.div 
+              className={`ml-1 ${sortConfig.key === 'cat' ? 'text-white' : 'text-royal-gray-400'}`}
+              animate={{ 
+                rotate: sortConfig.key === 'cat' && sortConfig.direction === 'descending' ? 180 : 0 
+              }}
+            >
+              <IoArrowUpOutline className="h-3 w-3" />
+            </motion.div>
+          </button>
+        </div>
+      </div>
+      
+      {/* Mobile Card View */}
+      <div className="sm:hidden space-y-4">
+        <AnimatePresence>
+          {sortedResults.map((bank, index) => (
+            <motion.div 
+              key={bank.id}
+              className={`border-2 rounded-none p-4 ${
+                index === 0 && sortConfig.key === 'monthlyPayment' && sortConfig.direction === 'ascending'
+                  ? "border-royal-black bg-royal-gray-100" 
+                  : "border-royal-gray-300"
+              }`}
+              variants={rowAnimation}
+              initial="hidden"
+              animate="visible"
+              exit={{ opacity: 0, y: 20 }}
+              layout
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center">
+                  {React.isValidElement(bank.logo) ? (
+                    <div className="text-2xl mr-3 text-royal-black">{bank.logo}</div>
+                  ) : (
+                    <img src={bank.logo} alt={bank.nombre} className="h-8 mr-3" />
+                  )}
+                  <div>
+                    <div className="font-bold">{bank.nombre}</div>
+                    {index === 0 && sortConfig.key === 'monthlyPayment' && sortConfig.direction === 'ascending' && (
+                      <motion.span 
+                        className="inline-block px-2 py-1 text-xs font-bold bg-royal-black text-white"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                      >
+                        Mejor opción
+                      </motion.span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                  <div className="text-xs text-royal-gray-600">Pago Mensual</div>
+                  <div className="font-bold">{formatCurrency(bank.monthlyPayment)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-royal-gray-600">Tasa</div>
+                  <div>{formatPercentage(bank.tasa)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-royal-gray-600">CAT</div>
+                  <div>{formatPercentage(bank.cat)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-royal-gray-600">Monto Total</div>
+                  <div>{formatCurrency(bank.totalAmount)}</div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end">
+                <motion.button
+                  onClick={() => onSelectBank(bank)}
+                  className="govuk-button-secondary px-3 py-1 text-sm flex items-center"
+                  whileHover={{ scale: 1.05, backgroundColor: "#e5e5e5" }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <IoDocumentTextOutline className="mr-1 h-4 w-4" />
+                  Ver detalles
+                </motion.button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+      
+      {/* Desktop Table View */}
+      <div className="hidden sm:block overflow-x-auto">
         <motion.table 
           className="govuk-table"
           variants={tableAnimation}

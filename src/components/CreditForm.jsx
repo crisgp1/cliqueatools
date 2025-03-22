@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   IoPlayCircleOutline, 
-  IoCreditCardOutline, 
   IoBusinessOutline,
   IoWalletOutline
 } from 'react-icons/io5';
@@ -13,6 +12,7 @@ import scotiabankLogo from '../assets/scotiabank.png';
 import banamexLogo from '../assets/banamex.png';
 import hsbcLogo from '../assets/hsbc.png';
 import afirmeLogo from '../assets/afirme.png';
+import heyBancoLogo from '../assets/heybanco.svg';
 
 // Lista de bancos mexicanos con sus tasas de interés aproximadas
 const BANCOS = [
@@ -25,6 +25,7 @@ const BANCOS = [
   { id: 7, nombre: 'Inbursa', tasa: 12.8, cat: 16.5, comision: 1.9, logo: <IoBusinessOutline className="h-8 w-8" /> },
   { id: 8, nombre: 'Afirme', tasa: 14.8, cat: 19.2, comision: 2.1, logo: afirmeLogo },
   { id: 9, nombre: 'BanRegio', tasa: 13.9, cat: 18.0, comision: 1.6, logo: <IoBusinessOutline className="h-8 w-8" /> },
+  { id: 10, nombre: 'Hey Banco', tasa: 12.9, cat: 16.8, comision: 1.8, logo: heyBancoLogo },
 ];
 
 // Plazos disponibles para el crédito en meses
@@ -305,7 +306,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             <label className="govuk-label mb-4">
               Selecciona un banco para vista previa (opcional)
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {BANCOS.map((bank) => (
                 <motion.button
                   key={bank.id}
@@ -356,56 +357,52 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             </div>
           </h3>
           
-          <div className="govuk-grid-row mb-6">
-            <div className="govuk-grid-column-one-third">
-              <motion.div 
-                className="border-2 border-royal-black p-4"
-                whileHover={{ y: -5 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              >
-                <div className="text-sm">Pago mensual</div>
-                <div className="text-xl font-bold">{formatCurrency(calculationPreview.monthlyPayment)}</div>
-              </motion.div>
-            </div>
-            <div className="govuk-grid-column-one-third">
-              <motion.div 
-                className="border-2 border-royal-black p-4"
-                whileHover={{ y: -5 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              >
-                <div className="text-sm">Tasa anual</div>
-                <div className="text-xl font-bold">{formatPercentage(calculationPreview.bank.tasa)}</div>
-              </motion.div>
-            </div>
-            <div className="govuk-grid-column-one-third">
-              <motion.div 
-                className="border-2 border-royal-black p-4"
-                whileHover={{ y: -5 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              >
-                <div className="text-sm">CAT</div>
-                <div className="text-xl font-bold">
-                  {useCustomRate 
-                    ? `~${formatPercentage(customRate * 1.3)}` // Estimación aproximada del CAT
-                    : formatPercentage(calculationPreview.bank.cat)
-                  }
-                </div>
-              </motion.div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <motion.div 
+              className="border-2 border-royal-black p-4"
+              whileHover={{ y: -5 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              <div className="text-sm">Pago mensual</div>
+              <div className="text-xl font-bold">{formatCurrency(calculationPreview.monthlyPayment)}</div>
+            </motion.div>
+            
+            <motion.div 
+              className="border-2 border-royal-black p-4"
+              whileHover={{ y: -5 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              <div className="text-sm">Tasa anual</div>
+              <div className="text-xl font-bold">{formatPercentage(calculationPreview.bank.tasa)}</div>
+            </motion.div>
+            
+            <motion.div 
+              className="border-2 border-royal-black p-4"
+              whileHover={{ y: -5 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              <div className="text-sm">CAT</div>
+              <div className="text-xl font-bold">
+                {useCustomRate 
+                  ? `~${formatPercentage(customRate * 1.3)}` // Estimación aproximada del CAT
+                  : formatPercentage(calculationPreview.bank.cat)
+                }
+              </div>
+            </motion.div>
           </div>
           
-          <div className="govuk-summary-list">
-            <div className="govuk-summary-list__row">
-              <dt className="govuk-summary-list__key">Comisión por apertura:</dt>
-              <dd className="govuk-summary-list__value">{formatCurrency(calculationPreview.openingCommission)}</dd>
+          <div className="govuk-summary-list space-y-3 sm:space-y-0">
+            <div className="govuk-summary-list__row flex flex-col sm:flex-row sm:items-center">
+              <dt className="govuk-summary-list__key text-base sm:text-sm sm:w-1/2">Comisión por apertura:</dt>
+              <dd className="govuk-summary-list__value text-base sm:text-sm font-medium sm:font-normal">{formatCurrency(calculationPreview.openingCommission)}</dd>
             </div>
-            <div className="govuk-summary-list__row">
-              <dt className="govuk-summary-list__key">Monto total a pagar:</dt>
-              <dd className="govuk-summary-list__value">{formatCurrency(calculationPreview.totalAmount)}</dd>
+            <div className="govuk-summary-list__row flex flex-col sm:flex-row sm:items-center">
+              <dt className="govuk-summary-list__key text-base sm:text-sm sm:w-1/2">Monto total a pagar:</dt>
+              <dd className="govuk-summary-list__value text-base sm:text-sm font-medium sm:font-normal">{formatCurrency(calculationPreview.totalAmount)}</dd>
             </div>
-            <div className="govuk-summary-list__row">
-              <dt className="govuk-summary-list__key">Intereses totales:</dt>
-              <dd className="govuk-summary-list__value">{formatCurrency(calculationPreview.totalInterest)}</dd>
+            <div className="govuk-summary-list__row flex flex-col sm:flex-row sm:items-center">
+              <dt className="govuk-summary-list__key text-base sm:text-sm sm:w-1/2">Intereses totales:</dt>
+              <dd className="govuk-summary-list__value text-base sm:text-sm font-medium sm:font-normal">{formatCurrency(calculationPreview.totalInterest)}</dd>
             </div>
           </div>
         </motion.div>

@@ -14,7 +14,9 @@ import {
   IoStatsChartOutline,
   IoGridOutline,
   IoAddOutline,
-  IoTrashOutline
+  IoTrashOutline,
+  IoMenuOutline,
+  IoCloseOutline
 } from 'react-icons/io5'
 
 function App() {
@@ -50,6 +52,9 @@ function App() {
   
   // Estado para controlar la sección activa en el panel central
   const [activeSection, setActiveSection] = useState('home')
+  
+  // Estado para controlar si el menú móvil está abierto
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   
   // Calcular valor total de vehículos
   const totalVehicleValue = vehicles.reduce((sum, vehicle) => sum + vehicle.valor, 0)
@@ -343,21 +348,72 @@ function App() {
     }
   }
 
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+  
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header */}
-      <header className="bg-gray-800 shadow-md py-3 sticky top-0 z-10">
+      <header className="bg-gray-800 shadow-md py-3 sticky top-0 z-20">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
               <img src={logoImgDark} alt="Cliquéalo" className="h-6" />
             </div>
+            <button 
+              className="md:hidden text-white p-2"
+              onClick={toggleMobileMenu}
+              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            >
+              {mobileMenuOpen ? 
+                <IoCloseOutline className="h-6 w-6" /> : 
+                <IoMenuOutline className="h-6 w-6" />
+              }
+            </button>
           </div>
         </div>
       </header>
+      
+      {/* Mobile Menu Overlay - Appears when menu button is clicked */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-gray-900 z-10 md:hidden pt-16 pb-20">
+          <nav className="h-full overflow-y-auto px-4 py-2">
+            <ul className="space-y-1">
+              {sections.map(section => (
+                <li key={section.id}>
+                  <button
+                    onClick={() => {
+                      setActiveSection(section.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    disabled={section.disabled}
+                    className={`w-full text-left px-4 py-4 flex items-center space-x-4 ${
+                      activeSection === section.id
+                        ? 'bg-gray-800 text-white border-l-4 border-blue-600'
+                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    } ${section.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <span className="flex-shrink-0">
+                      {renderIcon(section.icon)}
+                    </span>
+                    <span className="font-medium text-lg">{section.name}</span>
+                    {section.count && (
+                      <span className="ml-auto bg-blue-900 text-blue-100 text-xs px-2 py-1 rounded">
+                        {section.count}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      )}
 
       {/* Main Content with Sidebar */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex flex-col md:flex-row">
         {/* Sidebar */}
         <aside className="w-64 bg-gray-900 shadow-xl hidden md:block">
           <div className="p-5 border-b border-gray-700">
@@ -393,31 +449,33 @@ function App() {
           </nav>
         </aside>
 
-        {/* Mobile Sidebar */}
-        <div className="md:hidden bg-gray-800 shadow-md sticky top-16 z-10 overflow-x-auto">
-          <div className="flex whitespace-nowrap p-2">
-            {sections.map(section => (
-              <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                disabled={section.disabled}
-                className={`inline-flex items-center px-3 py-2 rounded text-sm font-medium mr-2 ${
-                  activeSection === section.id
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                } ${section.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                <span className="mr-1">{renderIcon(section.icon)}</span>
-                <span>{section.name}</span>
-                {section.count && (
-                  <span className="ml-1 bg-blue-800 text-white text-xs px-1.5 py-0.5 rounded">
-                    {section.count}
-                  </span>
-                )}
-              </button>
-            ))}
+        {/* Mobile Section Pills - Only visible on mobile when menu is closed */}
+        {!mobileMenuOpen && (
+          <div className="md:hidden bg-gray-800 shadow-md sticky top-16 z-10 overflow-x-auto">
+            <div className="flex whitespace-nowrap p-2">
+              {sections.map(section => (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  disabled={section.disabled}
+                  className={`inline-flex items-center px-3 py-2 rounded text-sm font-medium mr-2 ${
+                    activeSection === section.id
+                      ? 'bg-gray-700 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  } ${section.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <span className="mr-1">{renderIcon(section.icon)}</span>
+                  <span>{section.name}</span>
+                  {section.count && (
+                    <span className="ml-1 bg-blue-800 text-white text-xs px-1.5 py-0.5 rounded">
+                      {section.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Main Content Area */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-white">
@@ -430,17 +488,37 @@ function App() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0 text-center md:text-left">
-                <img src={logoImgDark} alt="Cliquéalo" className="h-10" />
-               
+                <img src={logoImgDark} alt="Cliquéalo" className="h-8 md:h-10" />
             </div>
             
             <div className="text-center md:text-right">
-              <p className="text-sm text-gray-400">© {new Date().getFullYear()} Cliquéalo.mx - Todos los derechos reservados</p>
-              <p className="text-sm text-gray-400">USO INTERNO - Este sitio es propiedad de Cliquéalo.mx</p>
+              <p className="text-xs md:text-sm text-gray-400">© {new Date().getFullYear()} Cliquéalo.mx - Todos los derechos reservados</p>
+              <p className="text-xs md:text-sm text-gray-400">USO INTERNO - Este sitio es propiedad de Cliquéalo.mx</p>
             </div>
           </div>
         </div>
       </footer>
+      
+      {/* Mobile Bottom Navigation - Fixed at bottom for quick access */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 shadow-lg z-10">
+        <div className="flex justify-around items-center py-2">
+          {sections.slice(0, 5).map(section => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              disabled={section.disabled}
+              className={`flex flex-col items-center px-2 py-1 ${
+                activeSection === section.id
+                  ? 'text-white'
+                  : 'text-gray-400'
+              } ${section.disabled ? 'opacity-50' : ''}`}
+            >
+              <span className="text-xl">{renderIcon(section.icon)}</span>
+              <span className="text-xs mt-1">{section.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
