@@ -9,6 +9,9 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
     año: new Date().getFullYear(),
     valor: 300000
   });
+  
+  // Estado para manejo de errores
+  const [errors, setErrors] = useState({});
 
   // Generar ID único
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -30,6 +33,11 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
       ...newVehicle,
       [name]: name === 'valor' || name === 'año' ? Number(value) : value
     });
+    
+    // Limpiar error del campo cuando el usuario escribe
+    if (errors[name]) {
+      setErrors({...errors, [name]: ''});
+    }
   };
 
   // Manejar submit del formulario
@@ -37,8 +45,20 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
     e.preventDefault();
     
     // Verificar que los campos obligatorios estén completos
-    if (!newVehicle.descripcion || !newVehicle.marca || !newVehicle.modelo || !newVehicle.valor) {
-      alert('Por favor completa todos los campos obligatorios');
+    const newErrors = {};
+    if (!newVehicle.marca) {
+      newErrors.marca = 'La marca es obligatoria';
+    }
+    if (!newVehicle.modelo) {
+      newErrors.modelo = 'El modelo es obligatorio';
+    }
+    if (!newVehicle.valor || newVehicle.valor < 50000) {
+      newErrors.valor = 'El valor debe ser mayor a $50,000';
+    }
+    
+    // Si hay errores, mostrarlos y detener el proceso
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     
@@ -50,12 +70,14 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
     
     // Limpiar el formulario
     setNewVehicle({
-      descripcion: '',
       marca: '',
       modelo: '',
       año: new Date().getFullYear(),
       valor: 300000
     });
+    
+    // Limpiar errores
+    setErrors({});
   };
 
   // Variantes de animación para los elementos
@@ -105,10 +127,9 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
       >
         <h3 className="govuk-form-section-title">Agregar nuevo vehículo</h3>
         <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-         
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <motion.div className={`govuk-form-group ${errors.marca ? 'border-l-4 border-royal-red pl-2' : ''}`} variants={itemAnimation}>
               <label htmlFor="marca" className="govuk-label">
                 Marca <span className="text-royal-red">*</span>
               </label>
@@ -118,12 +139,14 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                 name="marca"
                 value={newVehicle.marca}
                 onChange={handleNewVehicleChange}
-                className="govuk-input"
-                required
+                className={`govuk-input ${errors.marca ? 'border-royal-red' : ''}`}
               />
+              {errors.marca && (
+                <p className="text-royal-red text-sm mt-1 font-semibold">{errors.marca}</p>
+              )}
             </motion.div>
             
-            <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <motion.div className={`govuk-form-group ${errors.modelo ? 'border-l-4 border-royal-red pl-2' : ''}`} variants={itemAnimation}>
               <label htmlFor="modelo" className="govuk-label">
                 Modelo <span className="text-royal-red">*</span>
               </label>
@@ -133,9 +156,11 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                 name="modelo"
                 value={newVehicle.modelo}
                 onChange={handleNewVehicleChange}
-                className="govuk-input"
-                required
+                className={`govuk-input ${errors.modelo ? 'border-royal-red' : ''}`}
               />
+              {errors.modelo && (
+                <p className="text-royal-red text-sm mt-1 font-semibold">{errors.modelo}</p>
+              )}
             </motion.div>
           </div>
           
@@ -147,15 +172,13 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
               type="number"
               id="año"
               name="año"
-              min="2000"
-              max={new Date().getFullYear() + 1}
               value={newVehicle.año}
               onChange={handleNewVehicleChange}
               className="govuk-input"
             />
           </motion.div>
           
-          <motion.div className="govuk-form-group" variants={itemAnimation}>
+          <motion.div className={`govuk-form-group ${errors.valor ? 'border-l-4 border-royal-red pl-2' : ''}`} variants={itemAnimation}>
             <label htmlFor="valor" className="govuk-label">
               Valor del vehículo <span className="text-royal-red">*</span>
             </label>
@@ -166,13 +189,10 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                 type="number"
                 id="valor"
                 name="valor"
-                min="50000"
-                max="3000000"
                 step="10000"
                 value={newVehicle.valor}
                 onChange={handleNewVehicleChange}
-                className="govuk-input govuk-input-with-prefix text-right"
-                required
+                className={`govuk-input govuk-input-with-prefix text-right ${errors.valor ? 'border-royal-red' : ''}`}
               />
             </div>
             
@@ -194,6 +214,10 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
             <div className="text-base text-royal-black mt-2 text-right">
               <span className="font-bold">{formatCurrency(newVehicle.valor)}</span>
             </div>
+            
+            {errors.valor && (
+              <p className="text-royal-red text-sm mt-1 font-semibold">{errors.valor}</p>
+            )}
           </motion.div>
           
           <div className="flex justify-end mt-4">
@@ -222,7 +246,6 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
             <table className="govuk-table min-w-full">
               <thead className="hidden sm:table-header-group">
                 <tr>
-                  <th scope="col" className="govuk-table__header">Descripción</th>
                   <th scope="col" className="govuk-table__header">Marca/Modelo</th>
                   <th scope="col" className="govuk-table__header">Año</th>
                   <th scope="col" className="govuk-table__header">Valor</th>
@@ -239,10 +262,6 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                     transition={{ duration: 0.3 }}
                     className="sm:table-row flex flex-col border-b border-gray-200 pb-3 mb-3 sm:pb-0 sm:mb-0"
                   >
-                    <td className="govuk-table__cell sm:table-cell block" data-label="Descripción:">
-                      <span className="sm:hidden font-bold inline-block mb-1">Descripción:</span>
-                      {vehicle.descripcion}
-                    </td>
                     <td className="govuk-table__cell sm:table-cell block" data-label="Marca/Modelo:">
                       <span className="sm:hidden font-bold inline-block mb-1">Marca/Modelo:</span>
                       {vehicle.marca} {vehicle.modelo}
@@ -269,7 +288,7 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                   </motion.tr>
                 ))}
                 <tr className="font-bold sm:table-row flex flex-col sm:flex-row border-t-2 border-gray-300 pt-3">
-                  <td colSpan="3" className="govuk-table__cell text-left sm:text-right">
+                  <td colSpan="2" className="govuk-table__cell text-left sm:text-right">
                     Valor total:
                   </td>
                   <td colSpan="2" className="govuk-table__cell">
