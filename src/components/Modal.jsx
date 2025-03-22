@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { IoClose } from 'react-icons/io5';
 
 const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
   const modalRef = useRef();
@@ -51,31 +53,86 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  // Variantes de animación para el modal
+  const backdropVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 }
+  };
+
+  const modalVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 20,
+      scale: 0.95
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      scale: 1,
+      transition: { 
+        type: "spring", 
+        damping: 25, 
+        stiffness: 300 
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      y: 20,
+      scale: 0.95,
+      transition: { 
+        duration: 0.2 
+      }
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-300">
-      <div 
-        ref={modalRef} 
-        className={`${modalSize} w-full bg-white rounded-none border-2 border-royal-black shadow-md transform transition-all duration-300 overflow-hidden`}
-      >
-        <div className="flex items-center justify-between p-4 border-b-2 border-royal-black bg-royal-black text-white">
-          <h3 className="text-xl font-bold">{title}</h3>
-          <button 
-            onClick={onClose} 
-            className="p-1 hover:bg-royal-gray-700 transition focus:outline-none focus:ring-2 focus:ring-white"
-            aria-label="Cerrar"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
+          variants={backdropVariants}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div 
+            ref={modalRef} 
+            className={`${modalSize} w-full bg-white rounded-none border-2 border-royal-black shadow-lg overflow-hidden`}
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="p-6 max-h-[calc(100vh-10rem)] overflow-y-auto">
-          {children}
-        </div>
-      </div>
-    </div>
+            <motion.div 
+              className="flex items-center justify-between p-4 border-b-2 border-royal-black bg-royal-black text-white"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              <h3 className="text-xl font-bold">{title}</h3>
+              <motion.button 
+                onClick={onClose} 
+                className="p-1 hover:bg-royal-gray-700 rounded-full focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label="Cerrar"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <IoClose className="h-6 w-6" />
+              </motion.button>
+            </motion.div>
+            <motion.div 
+              className="p-6 max-h-[calc(100vh-10rem)] overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              {children}
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

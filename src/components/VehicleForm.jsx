@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { IoAddOutline, IoTrashOutline } from 'react-icons/io5';
 
 const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle }) => {
   const [newVehicle, setNewVehicle] = useState({
@@ -57,14 +59,56 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
     });
   };
 
+  // Variantes de animación para los elementos
+  const formAnimation = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.5,
+        staggerChildren: 0.1,
+        when: "beforeChildren"
+      }
+    }
+  };
+
+  const itemAnimation = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", stiffness: 400, damping: 20 }
+    }
+  };
+
+  const tableAnimation = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: { 
+      opacity: 1, 
+      scale: 1,
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 25,
+        delay: 0.2
+      }
+    }
+  };
+
   return (
     <div className="space-y-8">
-      <div className="govuk-form-section">
+      <motion.div 
+        className="govuk-form-section"
+        initial="hidden"
+        animate="visible"
+        variants={formAnimation}
+      >
         <h3 className="govuk-form-section-title">Agregar nuevo vehículo</h3>
         <form onSubmit={handleSubmit}>
           <div className="govuk-grid-row">
             <div className="govuk-grid-column-one-half">
-              <div className="govuk-form-group">
+              <motion.div className="govuk-form-group" variants={itemAnimation}>
                 <label htmlFor="descripcion" className="govuk-label">
                   Descripción <span className="text-royal-red">*</span>
                 </label>
@@ -78,11 +122,11 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                   required
                 />
                 <span className="govuk-form-hint">Nombre o descripción breve del vehículo</span>
-              </div>
+              </motion.div>
             </div>
             
             <div className="govuk-grid-column-one-half">
-              <div className="govuk-form-group">
+              <motion.div className="govuk-form-group" variants={itemAnimation}>
                 <label htmlFor="marca" className="govuk-label">
                   Marca <span className="text-royal-red">*</span>
                 </label>
@@ -95,11 +139,11 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                   className="govuk-input"
                   required
                 />
-              </div>
+              </motion.div>
             </div>
             
             <div className="govuk-grid-column-one-half">
-              <div className="govuk-form-group">
+              <motion.div className="govuk-form-group" variants={itemAnimation}>
                 <label htmlFor="modelo" className="govuk-label">
                   Modelo <span className="text-royal-red">*</span>
                 </label>
@@ -112,11 +156,11 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                   className="govuk-input"
                   required
                 />
-              </div>
+              </motion.div>
             </div>
             
             <div className="govuk-grid-column-one-half">
-              <div className="govuk-form-group">
+              <motion.div className="govuk-form-group" variants={itemAnimation}>
                 <label htmlFor="año" className="govuk-label">
                   Año
                 </label>
@@ -130,11 +174,11 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                   onChange={handleNewVehicleChange}
                   className="govuk-input"
                 />
-              </div>
+              </motion.div>
             </div>
             
             <div className="govuk-grid-column-full">
-              <div className="govuk-form-group">
+              <motion.div className="govuk-form-group" variants={itemAnimation}>
                 <label htmlFor="valor" className="govuk-label">
                   Valor del vehículo <span className="text-royal-red">*</span>
                 </label>
@@ -173,26 +217,31 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                 <div className="text-base text-royal-black mt-2 text-right">
                   <span className="font-bold">{formatCurrency(newVehicle.valor)}</span>
                 </div>
-              </div>
+              </motion.div>
             </div>
             
             <div className="govuk-grid-column-full flex justify-end mt-4">
-              <button
+              <motion.button
                 type="submit"
                 className="govuk-button flex items-center"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
+                <IoAddOutline className="h-5 w-5 mr-2" />
                 Agregar vehículo
-              </button>
+              </motion.button>
             </div>
           </div>
         </form>
-      </div>
+      </motion.div>
       
       {vehicles.length > 0 && (
-        <div className="govuk-form-section">
+        <motion.div 
+          className="govuk-form-section"
+          initial="hidden"
+          animate="visible"
+          variants={tableAnimation}
+        >
           <h3 className="govuk-form-section-title">Vehículos en el lote ({vehicles.length})</h3>
           <div className="overflow-x-auto">
             <table className="govuk-table">
@@ -207,7 +256,13 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
               </thead>
               <tbody>
                 {vehicles.map((vehicle) => (
-                  <tr key={vehicle.id}>
+                  <motion.tr 
+                    key={vehicle.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
                     <td className="govuk-table__cell">
                       {vehicle.descripcion}
                     </td>
@@ -221,17 +276,17 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                       {formatCurrency(vehicle.valor)}
                     </td>
                     <td className="govuk-table__cell text-right">
-                      <button
+                      <motion.button
                         onClick={() => onRemoveVehicle(vehicle.id)}
                         className="text-royal-red hover:text-royal-red/80"
                         title="Eliminar vehículo"
+                        whileHover={{ scale: 1.2 }}
+                        whileTap={{ scale: 0.9 }}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                      </button>
+                        <IoTrashOutline className="h-5 w-5" />
+                      </motion.button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
                 <tr className="font-bold">
                   <td colSpan="3" className="govuk-table__cell text-right">
@@ -244,7 +299,7 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

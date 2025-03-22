@@ -1,4 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  IoPlayCircleOutline, 
+  IoCreditCardOutline, 
+  IoBusinessOutline,
+  IoWalletOutline
+} from 'react-icons/io5';
 import bbvaLogo from '../assets/bbva.png';
 import banorteLogo from '../assets/banorte.png';
 import santanderLogo from '../assets/santander.png';
@@ -15,14 +22,13 @@ const BANCOS = [
   { id: 4, nombre: 'Scotiabank', tasa: 14.2, cat: 18.3, comision: 1.5, logo: scotiabankLogo },
   { id: 5, nombre: 'Citibanamex', tasa: 13.5, cat: 17.8, comision: 2.0, logo: banamexLogo },
   { id: 6, nombre: 'HSBC', tasa: 14.5, cat: 18.9, comision: 1.7, logo: hsbcLogo },
-  { id: 7, nombre: 'Inbursa', tasa: 12.8, cat: 16.5, comision: 1.9, logo: '💳' },
+  { id: 7, nombre: 'Inbursa', tasa: 12.8, cat: 16.5, comision: 1.9, logo: <IoBusinessOutline className="h-8 w-8" /> },
   { id: 8, nombre: 'Afirme', tasa: 14.8, cat: 19.2, comision: 2.1, logo: afirmeLogo },
-  { id: 9, nombre: 'BanRegio', tasa: 13.9, cat: 18.0, comision: 1.6, logo: '💳' },
+  { id: 9, nombre: 'BanRegio', tasa: 13.9, cat: 18.0, comision: 1.6, logo: <IoBusinessOutline className="h-8 w-8" /> },
 ];
 
 // Plazos disponibles para el crédito en meses
 const PLAZOS = [12, 24, 36, 48, 60];
-
 const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults }) => {
   // Estado para los datos del formulario
   const [downPaymentPercentage, setDownPaymentPercentage] = useState(20);
@@ -37,7 +43,35 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
   // Calcular valor del enganche y monto a financiar
   const downPaymentAmount = (vehiclesValue * downPaymentPercentage) / 100;
   const financingAmount = vehiclesValue - downPaymentAmount;
+  // Animaciones
+  const formAnimation = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        when: "beforeChildren"
+      }
+    }
+  };
 
+  const sectionAnimation = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", stiffness: 300, damping: 25 }
+    }
+  };
+
+  const previewAnimation = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: { 
+      opacity: 1, 
+      scale: 1,
+      transition: { type: "spring", stiffness: 300, damping: 25 }
+    }
+  };
   // Formatear moneda
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-MX', {
@@ -129,8 +163,16 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
   };
 
   return (
-    <div className="space-y-8">
-      <div className="govuk-form-section">
+    <motion.div 
+      className="space-y-8"
+      initial="hidden"
+      animate="visible"
+      variants={formAnimation}
+    >
+      <motion.div 
+        className="govuk-form-section"
+        variants={sectionAnimation}
+      >
         <h3 className="govuk-form-section-title">Configuración del crédito</h3>
         
         <div className="govuk-form-group">
@@ -141,7 +183,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             <span className="govuk-form-hint">Seleccione el porcentaje de enganche</span>
             <span className="font-bold">{downPaymentPercentage}%</span>
           </div>
-          <input
+          <motion.input
             type="range"
             id="downPayment"
             min="10"
@@ -150,6 +192,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             value={downPaymentPercentage}
             onChange={(e) => setDownPaymentPercentage(Number(e.target.value))}
             className="govuk-slider"
+            whileTap={{ scale: 1.05 }}
           />
           <div className="flex justify-between text-sm text-royal-gray-600 mt-1">
             <span>10%</span>
@@ -167,16 +210,17 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
           <label htmlFor="term" className="govuk-label">
             Plazo (meses)
           </label>
-          <select
+          <motion.select
             id="term"
             value={term}
             onChange={(e) => setTerm(Number(e.target.value))}
             className="govuk-select"
+            whileTap={{ scale: 1.02 }}
           >
             {PLAZOS.map(p => (
               <option key={p} value={p}>{p} meses</option>
             ))}
-          </select>
+          </motion.select>
           <div className="govuk-summary-list mt-3">
             <div className="govuk-summary-list__row">
               <dt className="govuk-summary-list__key">Monto a financiar:</dt>
@@ -191,7 +235,11 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             <label htmlFor="useCustomRate" className="govuk-label mb-0">
               Usar tasa de interés personalizada
             </label>
-            <div className="relative h-6 w-12">
+            <motion.div 
+              className="relative h-6 w-12 cursor-pointer"
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setUseCustomRate(!useCustomRate)}
+            >
               <input
                 type="checkbox"
                 id="useCustomRate"
@@ -200,14 +248,25 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                 className="sr-only"
               />
               <div className={`block w-12 h-6 rounded-full transition ${useCustomRate ? 'bg-royal-black' : 'bg-royal-gray-300'}`}></div>
-              <div 
-                className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${useCustomRate ? 'translate-x-6' : ''}`}>
-              </div>
-            </div>
+              <motion.div 
+                className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full`}
+                animate={{ 
+                  x: useCustomRate ? 24 : 0 
+                }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              >
+              </motion.div>
+            </motion.div>
           </div>
           
           {useCustomRate && (
-            <div className="mt-4">
+            <motion.div 
+              className="mt-4"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               <label htmlFor="customRate" className="govuk-label">
                 Tasa de interés anual (%)
               </label>
@@ -215,7 +274,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                 <span className="govuk-form-hint">Ajuste la tasa de interés</span>
                 <span className="font-bold">{customRate.toFixed(2)}%</span>
               </div>
-              <input
+              <motion.input
                 type="range"
                 id="customRate"
                 min="5"
@@ -224,12 +283,13 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                 value={customRate}
                 onChange={(e) => setCustomRate(Number(e.target.value))}
                 className="govuk-slider"
+                whileTap={{ scale: 1.05 }}
               />
               <div className="flex justify-between text-sm text-royal-gray-600 mt-1">
                 <span>5%</span>
                 <span>25%</span>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
         
@@ -247,7 +307,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {BANCOS.map((bank) => (
-                <button
+                <motion.button
                   key={bank.id}
                   type="button"
                   onClick={() => setSelectedBankId(bank.id)}
@@ -256,9 +316,11 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                       ? 'border-royal-black bg-royal-gray-100' 
                       : 'border-royal-gray-300 hover:border-royal-black/50'
                   } flex flex-col items-center transition-all`}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                 >
-                  {typeof bank.logo === 'string' && !bank.logo.includes('.') ? (
-                    <span className="text-2xl mb-2">{bank.logo}</span>
+                  {React.isValidElement(bank.logo) ? (
+                    <div className="mb-2 text-royal-black">{bank.logo}</div>
                   ) : (
                     <img src={bank.logo} alt={bank.nombre} className="h-8 mb-2" />
                   )}
@@ -266,19 +328,24 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                   <span className="text-sm">
                     {useCustomRate ? formatPercentage(customRate) : formatPercentage(bank.tasa)}
                   </span>
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
       
       {calculationPreview && (
-        <div className="govuk-form-section">
+        <motion.div 
+          className="govuk-form-section"
+          variants={previewAnimation}
+          initial="hidden"
+          animate="visible"
+        >
           <h3 className="govuk-form-section-title">
             <div className="flex items-center">
-              {typeof calculationPreview.bank.logo === 'string' && !calculationPreview.bank.logo.includes('.') ? (
-                <span className="text-2xl mr-2">{calculationPreview.bank.logo}</span>
+              {React.isValidElement(calculationPreview.bank.logo) ? (
+                <div className="mr-2 text-royal-black">{calculationPreview.bank.logo}</div>
               ) : (
                 <img src={calculationPreview.bank.logo} alt={calculationPreview.bank.nombre} className="h-8 mr-2" />
               )}
@@ -291,19 +358,31 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
           
           <div className="govuk-grid-row mb-6">
             <div className="govuk-grid-column-one-third">
-              <div className="border-2 border-royal-black p-4">
+              <motion.div 
+                className="border-2 border-royal-black p-4"
+                whileHover={{ y: -5 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              >
                 <div className="text-sm">Pago mensual</div>
                 <div className="text-xl font-bold">{formatCurrency(calculationPreview.monthlyPayment)}</div>
-              </div>
+              </motion.div>
             </div>
             <div className="govuk-grid-column-one-third">
-              <div className="border-2 border-royal-black p-4">
+              <motion.div 
+                className="border-2 border-royal-black p-4"
+                whileHover={{ y: -5 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              >
                 <div className="text-sm">Tasa anual</div>
                 <div className="text-xl font-bold">{formatPercentage(calculationPreview.bank.tasa)}</div>
-              </div>
+              </motion.div>
             </div>
             <div className="govuk-grid-column-one-third">
-              <div className="border-2 border-royal-black p-4">
+              <motion.div 
+                className="border-2 border-royal-black p-4"
+                whileHover={{ y: -5 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              >
                 <div className="text-sm">CAT</div>
                 <div className="text-xl font-bold">
                   {useCustomRate 
@@ -311,7 +390,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                     : formatPercentage(calculationPreview.bank.cat)
                   }
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
           
@@ -329,22 +408,22 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
               <dd className="govuk-summary-list__value">{formatCurrency(calculationPreview.totalInterest)}</dd>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
       
       <div className="flex justify-end">
-        <button
+        <motion.button
           onClick={handleCalculate}
           disabled={vehiclesValue <= 0}
           className={`govuk-button flex items-center ${vehiclesValue <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-          </svg>
+          <IoPlayCircleOutline className="h-5 w-5 mr-2" />
           Calcular todas las opciones
-        </button>
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

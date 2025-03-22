@@ -6,6 +6,16 @@ import logoImgDark from './assets/logo-dark.png'
 import CreditForm from './components/CreditForm'
 import BankComparison from './components/BankComparison'
 import AmortizationTable from './components/AmortizationTable'
+import { 
+  IoHomeOutline, 
+  IoCarSportOutline,
+  IoPersonOutline,
+  IoCardOutline,
+  IoStatsChartOutline,
+  IoGridOutline,
+  IoAddOutline,
+  IoTrashOutline
+} from 'react-icons/io5'
 
 function App() {
   // Estado para gestionar vehículos
@@ -108,47 +118,21 @@ function App() {
     }).format(value)
   }
 
-  // Función para renderizar icono según ID
+  // Función para renderizar icono según ID con react-icons
   const renderIcon = (iconId) => {
     switch(iconId) {
       case 'home':
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-          </svg>
-        )
+        return <IoHomeOutline className="h-5 w-5" />
       case 'car':
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2v5a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-9a1 1 0 00-.384-.77l-3-2A1 1 0 0016 3H4a1 1 0 00-1 1z" />
-          </svg>
-        )
+        return <IoCarSportOutline className="h-5 w-5" />
       case 'user':
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-          </svg>
-        )
+        return <IoPersonOutline className="h-5 w-5" />
       case 'credit-card':
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-            <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-          </svg>
-        )
+        return <IoCardOutline className="h-5 w-5" />
       case 'chart':
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-        )
+        return <IoStatsChartOutline className="h-5 w-5" />
       case 'table':
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clipRule="evenodd" />
-          </svg>
-        )
+        return <IoGridOutline className="h-5 w-5" />
       default:
         return null
     }
@@ -162,10 +146,7 @@ function App() {
           <div className="bg-white shadow-md p-6 border-l-4 border-l-blue-700">
             <h2 className="text-xl font-bold text-gray-800 mb-4">
               <span className="inline-flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                  <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2v5a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-9a1 1 0 00-.384-.77l-3-2A1 1 0 0016 3H4a1 1 0 00-1 1z" />
-                </svg>
+                <IoCarSportOutline className="h-6 w-6 mr-2 text-blue-600" />
                 Gestión de Vehículos
               </span>
             </h2>
@@ -182,10 +163,7 @@ function App() {
           <div className="bg-white shadow-md p-6 border-l-4 border-l-purple-700">
             <h2 className="text-xl font-bold text-gray-800 mb-4">
               <span className="inline-flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-purple-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                  <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-                </svg>
+                <IoCardOutline className="h-6 w-6 mr-2 text-purple-600" />
                 Configuración del Crédito
               </span>
             </h2>
@@ -201,9 +179,7 @@ function App() {
           <div className="bg-white shadow-md p-6 border-l-4 border-l-indigo-700">
             <h2 className="text-xl font-bold text-gray-800 mb-4">
               <span className="inline-flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
+                <IoStatsChartOutline className="h-6 w-6 mr-2 text-indigo-600" />
                 Resultados de la Simulación
               </span>
             </h2>
@@ -218,9 +194,7 @@ function App() {
           <div className="bg-white shadow-md p-6 border-l-4 border-l-green-700">
             <h2 className="text-xl font-bold text-gray-800 mb-4">
               <span className="inline-flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clipRule="evenodd" />
-                </svg>
+                <IoGridOutline className="h-6 w-6 mr-2 text-green-600" />
                 Tabla de Amortización
               </span>
             </h2>
@@ -284,9 +258,7 @@ function App() {
                     onClick={() => setActiveSection('vehicles')}
                     className="inline-flex items-center px-5 py-3 border border-transparent text-base font-medium shadow-md text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-700"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                    </svg>
+                    <IoAddOutline className="h-5 w-5 mr-2" />
                     Comenzar ahora
                   </button>
                 </div>

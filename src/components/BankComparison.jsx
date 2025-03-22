@@ -1,4 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  IoArrowUpOutline, 
+  IoDocumentTextOutline, 
+  IoBusinessOutline 
+} from 'react-icons/io5';
 
 const BankComparison = ({ results, onSelectBank }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'monthlyPayment', direction: 'ascending' });
@@ -48,8 +54,37 @@ const BankComparison = ({ results, onSelectBank }) => {
     return 'text-royal-gray-400';
   };
   
+  // Animaciones
+  const tableAnimation = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
+  
+  const rowAnimation = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        type: "spring",
+        damping: 25,
+        stiffness: 500
+      }
+    }
+  };
+  
   return (
-    <div className="govuk-form-section">
+    <motion.div 
+      className="govuk-form-section"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", damping: 25, stiffness: 500 }}
+    >
       <h3 className="govuk-form-section-title">
         Comparativa de opciones de financiamiento
       </h3>
@@ -58,7 +93,12 @@ const BankComparison = ({ results, onSelectBank }) => {
       </p>
       
       <div className="overflow-x-auto">
-        <table className="govuk-table">
+        <motion.table 
+          className="govuk-table"
+          variants={tableAnimation}
+          initial="hidden"
+          animate="visible"
+        >
           <caption className="govuk-table__caption sr-only">
             Comparativa de opciones de financiamiento
           </caption>
@@ -74,14 +114,13 @@ const BankComparison = ({ results, onSelectBank }) => {
               >
                 <div className="flex items-center">
                   Tasa
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className={`ml-1 h-4 w-4 ${getSortButtonClass('tasa')}`} 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
+                  <motion.div 
+                    className={`ml-1 ${getSortButtonClass('tasa')}`}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
                   >
-                    <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414l-3.293 3.293a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                  </svg>
+                    <IoArrowUpOutline className="h-4 w-4" />
+                  </motion.div>
                 </div>
               </th>
               <th 
@@ -91,14 +130,13 @@ const BankComparison = ({ results, onSelectBank }) => {
               >
                 <div className="flex items-center">
                   CAT
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className={`ml-1 h-4 w-4 ${getSortButtonClass('cat')}`} 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
+                  <motion.div 
+                    className={`ml-1 ${getSortButtonClass('cat')}`}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
                   >
-                    <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414l-3.293 3.293a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                  </svg>
+                    <IoArrowUpOutline className="h-4 w-4" />
+                  </motion.div>
                 </div>
               </th>
               <th 
@@ -108,14 +146,13 @@ const BankComparison = ({ results, onSelectBank }) => {
               >
                 <div className="flex items-center">
                   Pago Mensual
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className={`ml-1 h-4 w-4 ${getSortButtonClass('monthlyPayment')}`} 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
+                  <motion.div 
+                    className={`ml-1 ${getSortButtonClass('monthlyPayment')}`}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
                   >
-                    <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414l-3.293 3.293a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                  </svg>
+                    <IoArrowUpOutline className="h-4 w-4" />
+                  </motion.div>
                 </div>
               </th>
               <th 
@@ -125,14 +162,13 @@ const BankComparison = ({ results, onSelectBank }) => {
               >
                 <div className="flex items-center">
                   Monto Total
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className={`ml-1 h-4 w-4 ${getSortButtonClass('totalAmount')}`} 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
+                  <motion.div 
+                    className={`ml-1 ${getSortButtonClass('totalAmount')}`}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
                   >
-                    <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414l-3.293 3.293a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                  </svg>
+                    <IoArrowUpOutline className="h-4 w-4" />
+                  </motion.div>
                 </div>
               </th>
               <th scope="col" className="govuk-table__header">
@@ -141,26 +177,35 @@ const BankComparison = ({ results, onSelectBank }) => {
             </tr>
           </thead>
           <tbody>
-            {sortedResults.map((bank, index) => (
-              <tr 
-                key={bank.id} 
-                className={`govuk-table__row ${index === 0 && sortConfig.key === 'monthlyPayment' && sortConfig.direction === 'ascending' 
-                  ? "bg-royal-gray-100 border-l-4 border-royal-black" 
-                  : ""}`}
-              >
+            <AnimatePresence>
+              {sortedResults.map((bank, index) => (
+                <motion.tr 
+                  key={bank.id} 
+                  className={`govuk-table__row ${index === 0 && sortConfig.key === 'monthlyPayment' && sortConfig.direction === 'ascending' 
+                    ? "bg-royal-gray-100 border-l-4 border-royal-black" 
+                    : ""}`}
+                  variants={rowAnimation}
+                  exit={{ opacity: 0, x: -50 }}
+                  layout
+                >
                 <td className="govuk-table__cell">
                   <div className="flex items-center">
-                    {typeof bank.logo === 'string' && !bank.logo.includes('.') ? (
-                      <div className="text-2xl mr-3">{bank.logo}</div>
+                    {React.isValidElement(bank.logo) ? (
+                      <div className="text-2xl mr-3 text-royal-black">{bank.logo}</div>
                     ) : (
                       <img src={bank.logo} alt={bank.nombre} className="h-8 mr-3" />
                     )}
                     <div>
                       <div className="font-bold">{bank.nombre}</div>
                       {index === 0 && sortConfig.key === 'monthlyPayment' && sortConfig.direction === 'ascending' && (
-                        <span className="inline-block px-2 py-1 text-xs font-bold bg-royal-black text-white">
+                        <motion.span 
+                          className="inline-block px-2 py-1 text-xs font-bold bg-royal-black text-white"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                        >
                           Mejor opción
-                        </span>
+                        </motion.span>
                       )}
                     </div>
                   </div>
@@ -178,17 +223,21 @@ const BankComparison = ({ results, onSelectBank }) => {
                   {formatCurrency(bank.totalAmount)}
                 </td>
                 <td className="govuk-table__cell">
-                  <button
+                  <motion.button
                     onClick={() => onSelectBank(bank)}
-                    className="govuk-button-secondary px-3 py-1 text-sm"
+                    className="govuk-button-secondary px-3 py-1 text-sm flex items-center"
+                    whileHover={{ scale: 1.05, backgroundColor: "#e5e5e5" }}
+                    whileTap={{ scale: 0.95 }}
                   >
+                    <IoDocumentTextOutline className="mr-1 h-4 w-4" />
                     Ver detalles
-                  </button>
+                  </motion.button>
                 </td>
-              </tr>
-            ))}
+              </motion.tr>
+              ))}
+            </AnimatePresence>
           </tbody>
-        </table>
+        </motion.table>
       </div>
       
       <div className="govuk-inset-text mt-4">
@@ -196,7 +245,7 @@ const BankComparison = ({ results, onSelectBank }) => {
           * Las tasas de interés y CAT son aproximadas y pueden variar. Consulta términos y condiciones con cada institución bancaria.
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
