@@ -1,0 +1,105 @@
+services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - auth-service
+      - client-service
+      - vehicle-service
+      - bank-service
+      - credit-service
+      - amortization-service
+      - postgres
+    networks:
+      - cliqueatools-network
+      
+  auth-service:
+    build:
+      context: ./auth-service
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+    depends_on:
+      - postgres
+    networks:
+      - cliqueatools-network
+      
+  client-service:
+    build:
+      context: ./client-service
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+    depends_on:
+      - postgres
+    networks:
+      - cliqueatools-network
+      
+  vehicle-service:
+    build:
+      context: ./vehicle-service
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+    depends_on:
+      - postgres
+    networks:
+      - cliqueatools-network
+      
+  bank-service:
+    build:
+      context: ./bank-service
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+    depends_on:
+      - postgres
+    networks:
+      - cliqueatools-network
+      
+  credit-service:
+    build:
+      context: ./credit-service
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+    depends_on:
+      - postgres
+    networks:
+      - cliqueatools-network
+      
+  amortization-service:
+    build:
+      context: ./amortization-service
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+    depends_on:
+      - postgres
+    networks:
+      - cliqueatools-network
+      
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: cliqueatools
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./shared/db/schema:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - cliqueatools-network
+      
+networks:
+  cliqueatools-network:
+    driver: bridge
+    
+volumes:
+  postgres-data:
