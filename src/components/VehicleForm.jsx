@@ -4,7 +4,6 @@ import { IoAddOutline, IoTrashOutline } from 'react-icons/io5';
 
 const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle }) => {
   const [newVehicle, setNewVehicle] = useState({
-    descripcion: '',
     marca: '',
     modelo: '',
     año: new Date().getFullYear(),
