@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   IoPlayCircleOutline, 
@@ -33,17 +33,77 @@ const PLAZOS = [12, 24, 36, 48, 60];
 const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults }) => {
   // Estado para los datos del formulario
   const [downPaymentPercentage, setDownPaymentPercentage] = useState(20);
+  const [downPaymentAmount, setDownPaymentAmount] = useState(() => (vehiclesValue * 20) / 100);
   const [term, setTerm] = useState(36);
   const [selectedBankId, setSelectedBankId] = useState(null);
   const [calculationPreview, setCalculationPreview] = useState(null);
   
-  // Estado para tasa de interés personalizada
+  // Estado para tasa de interés y CAT personalizada
   const [useCustomRate, setUseCustomRate] = useState(false);
   const [customRate, setCustomRate] = useState(12.0);
+  const [useCustomCat, setUseCustomCat] = useState(false);
+  const [customCat, setCustomCat] = useState(15.6);
   
-  // Calcular valor del enganche y monto a financiar
-  const downPaymentAmount = (vehiclesValue * downPaymentPercentage) / 100;
+  // Estado para controlar la actualización del enganche
+  const [isUpdatingFromPercentage, setIsUpdatingFromPercentage] = useState(false);
+  const debounceTimerRef = useRef(null);
+  
+  // Calcular monto a financiar
   const financingAmount = vehiclesValue - downPaymentAmount;
+
+  // Actualizar monto de enganche cuando cambia el porcentaje
+  useEffect(() => {
+    if (vehiclesValue > 0 && isUpdatingFromPercentage) {
+      setDownPaymentAmount((vehiclesValue * downPaymentPercentage) / 100);
+      setIsUpdatingFromPercentage(false);
+    }
+  }, [downPaymentPercentage, vehiclesValue, isUpdatingFromPercentage]);
+
+  // Controlador para cambio de porcentaje desde el slider o input numérico
+  const handleDownPaymentPercentageChange = (value) => {
+    setIsUpdatingFromPercentage(true);
+    setDownPaymentPercentage(Number(value));
+  };
+
+  // Función para actualizar el porcentaje basado en el monto del enganche
+  const handleDownPaymentAmountChange = (value) => {
+    // Permitir que el usuario borre el campo completamente
+    if (value === '' || value === null) {
+      setDownPaymentAmount('');
+      return;
+    }
+    
+    // Remover cualquier caracter no numérico excepto dígitos
+    const sanitizedValue = value.replace(/[^0-9]/g, '');
+    
+    // Si no hay valor después de sanitizar, dejarlo vacío
+    if (!sanitizedValue) {
+      setDownPaymentAmount('');
+      return;
+    }
+    
+    // Convertir a número entero (sin decimales)
+    const newAmount = parseInt(sanitizedValue, 10);
+    
+    // Verificar si es un número válido
+    if (!isNaN(newAmount)) {
+      setDownPaymentAmount(newAmount);
+      
+      // Limpiar cualquier debounce timer existente
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      
+      // Crear un nuevo timer para actualizar el porcentaje después de una pausa
+      debounceTimerRef.current = setTimeout(() => {
+        // Calculamos el nuevo porcentaje solo si tenemos un valor válido
+        if (vehiclesValue > 0) {
+          const newPercentage = Math.min(60, Math.max(10, (newAmount * 100) / vehiclesValue));
+          setDownPaymentPercentage(Math.round(newPercentage));
+        }
+      }, 500); // 500ms de debounce
+    }
+  };
   // Animaciones
   const formAnimation = {
     hidden: { opacity: 0 },
@@ -134,9 +194,11 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
       selectedBankId,
       financingAmount,
       useCustomRate,
-      customRate
+      customRate,
+      useCustomCat,
+      customCat
     });
-  }, [downPaymentPercentage, term, selectedBankId, downPaymentAmount, useCustomRate, customRate, onCreditConfigChange]);
+  }, [downPaymentPercentage, term, selectedBankId, downPaymentAmount, useCustomRate, customRate, useCustomCat, customCat, onCreditConfigChange]);
 
   // Calcular resultados para todos los bancos
   const handleCalculate = () => {
@@ -182,7 +244,19 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
           </label>
           <div className="flex justify-between mb-1">
             <span className="govuk-form-hint">Seleccione el porcentaje de enganche</span>
-            <span className="font-bold">{downPaymentPercentage}%</span>
+            <div className="flex items-center">
+              <motion.input
+                type="number"
+                min="10"
+                max="60"
+                step="1"
+                value={downPaymentPercentage}
+                onChange={(e) => handleDownPaymentPercentageChange(e.target.value)}
+                className="w-16 h-8 border border-royal-gray-300 rounded text-center mr-1"
+                whileTap={{ scale: 1.05 }}
+              />
+              <span className="font-bold">%</span>
+            </div>
           </div>
           <motion.input
             type="range"
@@ -191,7 +265,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             max="60"
             step="1"
             value={downPaymentPercentage}
-            onChange={(e) => setDownPaymentPercentage(Number(e.target.value))}
+            onChange={(e) => handleDownPaymentPercentageChange(e.target.value)}
             className="govuk-slider"
             whileTap={{ scale: 1.05 }}
           />
@@ -200,9 +274,27 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             <span>60%</span>
           </div>
           <div className="govuk-summary-list mt-3">
-            <div className="govuk-summary-list__row">
-              <dt className="govuk-summary-list__key">Monto de enganche:</dt>
-              <dd className="govuk-summary-list__value font-bold">{formatCurrency(downPaymentAmount)}</dd>
+            <div className="govuk-summary-list__row flex items-center justify-between">
+              <dt className="govuk-summary-list__key mr-2">Monto de enganche:</dt>
+              <dd className="govuk-summary-list__value flex items-center">
+                <span className="mr-2">$</span>
+                <motion.input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="0"
+                  value={typeof downPaymentAmount === 'number' ? downPaymentAmount.toString() : downPaymentAmount}
+                  onChange={(e) => handleDownPaymentAmountChange(e.target.value)}
+                  onBlur={() => {
+                    // Si el campo está vacío al perder el foco, restaurar al valor calculado del porcentaje
+                    if (downPaymentAmount === '' || downPaymentAmount === null) {
+                      setDownPaymentAmount(Math.round((vehiclesValue * downPaymentPercentage) / 100));
+                    }
+                  }}
+                  className="w-32 h-8 border border-royal-gray-300 rounded text-center font-bold"
+                  whileTap={{ scale: 1.05 }}
+                />
+              </dd>
             </div>
           </div>
         </div>
@@ -273,7 +365,19 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
               </label>
               <div className="flex justify-between mb-1">
                 <span className="govuk-form-hint">Ajuste la tasa de interés</span>
-                <span className="font-bold">{customRate.toFixed(2)}%</span>
+                <div className="flex items-center">
+                  <motion.input
+                    type="number"
+                    min="5"
+                    max="25"
+                    step="0.1"
+                    value={customRate}
+                    onChange={(e) => setCustomRate(Number(e.target.value))}
+                    className="w-16 h-8 border border-royal-gray-300 rounded text-center mr-1"
+                    whileTap={{ scale: 1.05 }}
+                  />
+                  <span className="font-bold">%</span>
+                </div>
               </div>
               <motion.input
                 type="range"
@@ -290,6 +394,82 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                 <span>5%</span>
                 <span>25%</span>
               </div>
+
+              {/* CAT personalizado */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="useCustomCat" className="govuk-label mb-0">
+                    Ajustar CAT manualmente
+                  </label>
+                  <motion.div 
+                    className="relative h-6 w-12 cursor-pointer"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setUseCustomCat(!useCustomCat)}
+                  >
+                    <input
+                      type="checkbox"
+                      id="useCustomCat"
+                      checked={useCustomCat}
+                      onChange={() => setUseCustomCat(!useCustomCat)}
+                      className="sr-only"
+                    />
+                    <div className={`block w-12 h-6 rounded-full transition ${useCustomCat ? 'bg-royal-black' : 'bg-royal-gray-300'}`}></div>
+                    <motion.div 
+                      className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full`}
+                      animate={{ 
+                        x: useCustomCat ? 24 : 0 
+                      }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    >
+                    </motion.div>
+                  </motion.div>
+                </div>
+              </div>
+
+              {useCustomCat && (
+                <motion.div 
+                  className="mt-4"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <label htmlFor="customCat" className="govuk-label">
+                    CAT (%)
+                  </label>
+                  <div className="flex justify-between mb-1">
+                    <span className="govuk-form-hint">Ajuste el CAT</span>
+                    <div className="flex items-center">
+                      <motion.input
+                        type="number"
+                        min="6"
+                        max="30"
+                        step="0.1"
+                        value={customCat}
+                        onChange={(e) => setCustomCat(Number(e.target.value))}
+                        className="w-16 h-8 border border-royal-gray-300 rounded text-center mr-1"
+                        whileTap={{ scale: 1.05 }}
+                      />
+                      <span className="font-bold">%</span>
+                    </div>
+                  </div>
+                  <motion.input
+                    type="range"
+                    id="customCat"
+                    min="6"
+                    max="30"
+                    step="0.1"
+                    value={customCat}
+                    onChange={(e) => setCustomCat(Number(e.target.value))}
+                    className="govuk-slider"
+                    whileTap={{ scale: 1.05 }}
+                  />
+                  <div className="flex justify-between text-sm text-royal-gray-600 mt-1">
+                    <span>6%</span>
+                    <span>30%</span>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </div>
@@ -383,9 +563,11 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             >
               <div className="text-sm">CAT</div>
               <div className="text-xl font-bold">
-                {useCustomRate 
-                  ? `~${formatPercentage(customRate * 1.3)}` // Estimación aproximada del CAT
-                  : formatPercentage(calculationPreview.bank.cat)
+                {useCustomCat 
+                  ? formatPercentage(customCat)
+                  : useCustomRate 
+                    ? `~${formatPercentage(customRate * 1.3)}` // Estimación aproximada del CAT
+                    : formatPercentage(calculationPreview.bank.cat)
                 }
               </div>
             </motion.div>

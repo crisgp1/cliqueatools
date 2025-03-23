@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -7,8 +7,18 @@ import logoCliquealo from '../assets/logo-cliquealo.png';
 const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => {
   const printComponentRef = useRef();
   
+  // Estado para controlar el número de pagos visibles
+  const [visiblePayments, setVisiblePayments] = useState(12);
+  
   // Determinar la tasa de interés a utilizar (personalizada o del banco)
   const effectiveRate = creditConfig.useCustomRate ? creditConfig.customRate : bank.tasa;
+  
+  // Determinar el CAT a utilizar (personalizado o del banco)
+  const effectiveCat = creditConfig.useCustomCat 
+    ? creditConfig.customCat 
+    : creditConfig.useCustomRate 
+      ? creditConfig.customRate * 1.3 // Estimación aproximada
+      : bank.cat;
   
   // Preparar datos para la tabla de amortización
   const amortizationData = generateAmortizationTable(
@@ -141,9 +151,11 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
       doc.text(`Monto financiado: ${formatCurrency(creditConfig.financingAmount)}`, 95, 65);
       doc.text(`Plazo: ${creditConfig.term} meses`, 95, 70);
       doc.text(`Tasa anual: ${formatPercentage(effectiveRate)}${creditConfig.useCustomRate ? ' (Personalizada)' : ''}`, 95, 75);
-      doc.text(`CAT: ${creditConfig.useCustomRate 
-        ? `~${formatPercentage(creditConfig.customRate * 1.3)}` // Estimación aproximada
-        : formatPercentage(bank.cat)}`, 95, 80);
+      doc.text(`CAT: ${creditConfig.useCustomCat 
+        ? formatPercentage(creditConfig.customCat)
+        : creditConfig.useCustomRate 
+          ? `~${formatPercentage(creditConfig.customRate * 1.3)}` // Estimación aproximada
+          : formatPercentage(bank.cat)}`, 95, 80);
       
       // Resumen del préstamo
       doc.setFontSize(12);
@@ -338,9 +350,11 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
               <div className="flex flex-col sm:flex-row sm:justify-between">
                 <dt className="text-sm font-bold sm:w-1/2">CAT:</dt>
                 <dd className="text-sm">
-                  {creditConfig.useCustomRate 
-                    ? `~${formatPercentage(creditConfig.customRate * 1.3)}` // Estimación aproximada
-                    : formatPercentage(bank.cat)
+                  {creditConfig.useCustomCat 
+                    ? formatPercentage(creditConfig.customCat)
+                    : creditConfig.useCustomRate 
+                      ? `~${formatPercentage(creditConfig.customRate * 1.3)}` // Estimación aproximada
+                      : formatPercentage(bank.cat)
                   }
                 </dd>
               </div>
@@ -432,28 +446,21 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
           <div className="flex space-x-2 mb-4">
             <button 
               className="px-3 py-1 text-xs bg-royal-gray-100 border border-royal-gray-300 rounded"
-              onClick={() => {
-                const pagesToShow = document.getElementById('mobilePageSize');
-                pagesToShow.value = '12';
-                pagesToShow.dispatchEvent(new Event('change'));
-              }}
+              onClick={() => setVisiblePayments(12)}
             >
               12 meses
             </button>
             <button 
               className="px-3 py-1 text-xs bg-royal-gray-100 border border-royal-gray-300 rounded"
-              onClick={() => {
-                const pagesToShow = document.getElementById('mobilePageSize');
-                pagesToShow.value = '24';
-                pagesToShow.dispatchEvent(new Event('change'));
-              }}
+              onClick={() => setVisiblePayments(24)}
             >
               24 meses
             </button>
             <select 
               id="mobilePageSize" 
               className="px-2 py-1 text-xs bg-white border border-royal-gray-300 rounded"
-              defaultValue={Math.min(12, amortizationData.length)}
+              value={visiblePayments}
+              onChange={(e) => setVisiblePayments(Number(e.target.value))}
             >
               {[6, 12, 24, creditConfig.term].map(size => (
                 <option key={size} value={size}>{size} pagos</option>
@@ -462,7 +469,7 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
           </div>
           
           <div className="space-y-3">
-            {amortizationData.slice(0, 12).map((row) => (
+            {amortizationData.slice(0, visiblePayments).map((row) => (
               <details 
                 key={row.paymentNumber} 
                 className="border border-royal-gray-300"
@@ -495,19 +502,14 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
             ))}
           </div>
           
-          {amortizationData.length > 12 && (
+          {visiblePayments < amortizationData.length && (
             <div className="mt-4 text-center">
               <p className="text-sm text-royal-gray-600">
-                Mostrando 12 de {amortizationData.length} pagos
+                Mostrando {visiblePayments} de {amortizationData.length} pagos
               </p>
               <button 
                 className="mt-2 px-4 py-2 text-sm bg-royal-gray-100 border border-royal-gray-300 rounded"
-                onClick={() => {
-                  // Implement pagination or view more functionality
-                  const pagesToShow = document.getElementById('mobilePageSize');
-                  pagesToShow.value = String(amortizationData.length);
-                  pagesToShow.dispatchEvent(new Event('change'));
-                }}
+                onClick={() => setVisiblePayments(amortizationData.length)}
               >
                 Ver todos los pagos
               </button>
