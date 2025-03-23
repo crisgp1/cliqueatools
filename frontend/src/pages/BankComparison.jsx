@@ -6,6 +6,26 @@ import {
   IoInformationCircleOutline,
   IoCheckmarkCircleOutline
 } from 'react-icons/io5';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+// Registrar los componentes necesarios de Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const BankComparison = ({ results, onSelectBank }) => {
   const [expandedBankId, setExpandedBankId] = useState(null);
@@ -350,31 +370,100 @@ const BankComparison = ({ results, onSelectBank }) => {
                         </div>
                       </div>
                       
-                      {/* Barra visual de distribución del pago total */}
+                      {/* Gráfico de distribución del pago total con Chart.js */}
                       <div className="mt-4">
                         <div className="flex justify-between items-center mb-2">
                           <h4 className="text-sm font-bold">Distribución del pago total</h4>
                           <span className="text-sm font-medium">{formatCurrency(bank.totalAmount)}</span>
                         </div>
                         
-                        <div className="w-full h-8 bg-gray-200 rounded-md overflow-hidden flex">
-                          <div 
-                            className="h-full bg-blue-600 flex items-center justify-center text-xs text-white font-medium"
-                            style={{ width: `${(bank.financingAmount / bank.totalAmount) * 100}%` }}
-                          >
-                            Capital ({((bank.financingAmount / bank.totalAmount) * 100).toFixed(1)}%)
+                        <div className="w-full h-14">
+                          <Bar
+                            data={{
+                              labels: ['Distribución del pago total'],
+                              datasets: [
+                                {
+                                  label: 'Capital',
+                                  data: [bank.financingAmount],
+                                  backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                                  borderColor: 'rgba(37, 99, 235, 1)',
+                                  borderWidth: 1,
+                                  barPercentage: 0.9
+                                },
+                                {
+                                  label: 'Interés',
+                                  data: [bank.totalInterest],
+                                  backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                                  borderColor: 'rgba(245, 158, 11, 1)',
+                                  borderWidth: 1,
+                                  barPercentage: 0.9
+                                },
+                                {
+                                  label: 'Comisión',
+                                  data: [bank.openingCommission],
+                                  backgroundColor: 'rgba(168, 85, 247, 0.8)',
+                                  borderColor: 'rgba(168, 85, 247, 1)',
+                                  borderWidth: 1,
+                                  barPercentage: 0.9
+                                }
+                              ]
+                            }}
+                            options={{
+                              indexAxis: 'y',
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              scales: {
+                                x: {
+                                  stacked: true,
+                                  grid: {
+                                    display: false
+                                  },
+                                  ticks: {
+                                    display: false
+                                  }
+                                },
+                                y: {
+                                  stacked: true,
+                                  grid: {
+                                    display: false
+                                  },
+                                  ticks: {
+                                    display: false
+                                  }
+                                }
+                              },
+                              plugins: {
+                                legend: {
+                                  display: false
+                                },
+                                tooltip: {
+                                  callbacks: {
+                                    label: function(context) {
+                                      const label = context.dataset.label || '';
+                                      const value = context.raw;
+                                      const percentage = ((value / bank.totalAmount) * 100).toFixed(1);
+                                      return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                    }
+                                  }
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                        
+                        {/* Leyenda del gráfico */}
+                        <div className="flex justify-center gap-4 mt-2 text-xs">
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 bg-blue-600 rounded-sm mr-1"></div>
+                            <span>Capital ({((bank.financingAmount / bank.totalAmount) * 100).toFixed(1)}%)</span>
                           </div>
-                          <div 
-                            className="h-full bg-amber-500 flex items-center justify-center text-xs text-white font-medium"
-                            style={{ width: `${(bank.totalInterest / bank.totalAmount) * 100}%` }}
-                          >
-                            Interés ({((bank.totalInterest / bank.totalAmount) * 100).toFixed(1)}%)
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 bg-amber-500 rounded-sm mr-1"></div>
+                            <span>Interés ({((bank.totalInterest / bank.totalAmount) * 100).toFixed(1)}%)</span>
                           </div>
-                          <div 
-                            className="h-full bg-purple-500 flex items-center justify-center text-xs text-white font-medium"
-                            style={{ width: `${(bank.openingCommission / bank.totalAmount) * 100}%` }}
-                          >
-                            Comisión ({((bank.openingCommission / bank.totalAmount) * 100).toFixed(1)}%)
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 bg-purple-500 rounded-sm mr-1"></div>
+                            <span>Comisión ({((bank.openingCommission / bank.totalAmount) * 100).toFixed(1)}%)</span>
                           </div>
                         </div>
                       </div>

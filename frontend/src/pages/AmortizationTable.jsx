@@ -5,6 +5,34 @@ import 'jspdf-autotable';
 import logoCliquealo from '../assets/logo-cliquealo.png';
 import CreditEvolutionModal from './CreditEvolutionModal';
 import { IoBarChartOutline } from 'react-icons/io5';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
+
+// Registrar los componentes necesarios de Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => {
   // Estado para controlar el modal de evolución del crédito
@@ -364,20 +392,76 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
                 <div className="border border-gray-200 p-3 rounded bg-white">
                   <div className="font-medium mb-2">Distribución del Financiamiento</div>
                   
-                  {/* Barra visual de enganche y financiamiento */}
-                  <div className="w-full h-10 rounded overflow-hidden border border-gray-300 flex mb-2">
-                    <div 
-                      className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 flex items-center justify-center text-white text-xs font-medium"
-                      style={{ width: `${(creditConfig.downPaymentAmount / (creditConfig.financingAmount + creditConfig.downPaymentAmount)) * 100}%` }}
-                    >
-                      Enganche
-                    </div>
-                    <div 
-                      className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 flex items-center justify-center text-white text-xs font-medium"
-                      style={{ width: `${(creditConfig.financingAmount / (creditConfig.financingAmount + creditConfig.downPaymentAmount)) * 100}%` }}
-                    >
-                      Financiado
-                    </div>
+                  {/* Barra visual de enganche y financiamiento reemplazada con Doughnut */}
+                  <div className="w-full h-32 mb-2">
+                    <Doughnut
+                      data={{
+                        labels: ['Enganche', 'Financiado'],
+                        datasets: [
+                          {
+                            data: [
+                              creditConfig.downPaymentAmount,
+                              creditConfig.financingAmount
+                            ],
+                            backgroundColor: [
+                              'rgba(99, 102, 241, 0.8)',
+                              'rgba(20, 184, 166, 0.8)'
+                            ],
+                            borderColor: [
+                              'rgba(79, 70, 229, 1)',
+                              'rgba(13, 148, 136, 1)'
+                            ],
+                            borderWidth: 1,
+                            hoverOffset: 5
+                          }
+                        ]
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                        plugins: {
+                          legend: {
+                            position: 'bottom',
+                            labels: {
+                              font: {
+                                size: 11
+                              },
+                              generateLabels: (chart) => {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                  const total = creditConfig.downPaymentAmount + creditConfig.financingAmount;
+                                  return data.labels.map((label, i) => {
+                                    const value = data.datasets[0].data[i];
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                      text: `${label}: ${formatCurrency(value)} (${percentage}%)`,
+                                      fillStyle: data.datasets[0].backgroundColor[i],
+                                      strokeStyle: data.datasets[0].borderColor[i],
+                                      lineWidth: 1,
+                                      hidden: false,
+                                      index: i
+                                    };
+                                  });
+                                }
+                                return [];
+                              }
+                            }
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw;
+                                const total = creditConfig.downPaymentAmount + creditConfig.financingAmount;
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                              }
+                            }
+                          }
+                        }
+                      }}
+                    />
                   </div>
                   
                   <div className="flex justify-between text-sm mb-3">
@@ -511,108 +595,161 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
               </span>
             </h3>
             
-            {/* Visualización gráfica de la evolución del crédito */}
+            {/* Visualización gráfica de la evolución del crédito con Chart.js */}
             <div className="border-2 border-gray-300 rounded-md p-4 mb-6">
-              <h4 className="text-sm font-bold mb-2">Evolución del Financiamiento del Vehículo</h4>
+              <h4 className="text-sm font-bold mb-4">Evolución del Financiamiento del Vehículo</h4>
               
-              {/* Leyenda */}
-              <div className="flex flex-wrap gap-4 mb-4">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-gradient-to-r from-indigo-600 to-blue-500 mr-1 rounded-sm"></div>
-                  <span className="text-xs">Capital pagado</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-gradient-to-r from-orange-400 to-red-500 mr-1 rounded-sm"></div>
-                  <span className="text-xs">Intereses pagados</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-gradient-to-r from-gray-300 to-gray-400 mr-1 rounded-sm"></div>
-                  <span className="text-xs">Saldo pendiente</span>
-                </div>
+              <div className="h-64 mb-4">
+                <Line
+                  data={{
+                    // Preparar datos para la evolución del saldo y pagos
+                    labels: Array.from({ length: creditConfig.term + 1 }, (_, i) => i),
+                    datasets: [
+                      {
+                        label: 'Saldo pendiente',
+                        data: (() => {
+                          const balances = [creditConfig.financingAmount];
+                          for (let i = 0; i < amortizationData.length; i++) {
+                            balances.push(amortizationData[i].balance);
+                          }
+                          return balances;
+                        })(),
+                        fill: false,
+                        borderColor: 'rgba(107, 114, 128, 1)',
+                        backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: (ctx) => {
+                          const index = ctx.dataIndex;
+                          // Mostrar puntos solo en puntos clave (0%, 25%, 50%, 75%, 100%)
+                          return [0, Math.floor(creditConfig.term * 0.25), Math.floor(creditConfig.term * 0.5), 
+                                  Math.floor(creditConfig.term * 0.75), creditConfig.term].includes(index) ? 4 : 0;
+                        }
+                      },
+                      {
+                        label: 'Capital pagado',
+                        data: (() => {
+                          const principalPaid = [0];
+                          let accumulatedPrincipal = 0;
+                          for (let i = 0; i < amortizationData.length; i++) {
+                            accumulatedPrincipal += amortizationData[i].principalPayment;
+                            principalPaid.push(accumulatedPrincipal);
+                          }
+                          return principalPaid;
+                        })(),
+                        fill: false,
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: (ctx) => {
+                          const index = ctx.dataIndex;
+                          return [0, Math.floor(creditConfig.term * 0.25), Math.floor(creditConfig.term * 0.5), 
+                                  Math.floor(creditConfig.term * 0.75), creditConfig.term].includes(index) ? 4 : 0;
+                        }
+                      },
+                      {
+                        label: 'Intereses pagados',
+                        data: (() => {
+                          const interestPaid = [0];
+                          let accumulatedInterest = 0;
+                          for (let i = 0; i < amortizationData.length; i++) {
+                            accumulatedInterest += amortizationData[i].interestPayment;
+                            interestPaid.push(accumulatedInterest);
+                          }
+                          return interestPaid;
+                        })(),
+                        fill: false,
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: (ctx) => {
+                          const index = ctx.dataIndex;
+                          return [0, Math.floor(creditConfig.term * 0.25), Math.floor(creditConfig.term * 0.5), 
+                                  Math.floor(creditConfig.term * 0.75), creditConfig.term].includes(index) ? 4 : 0;
+                        }
+                      }
+                    ]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                      mode: 'index',
+                      intersect: false
+                    },
+                    plugins: {
+                      legend: {
+                        position: 'top',
+                        labels: {
+                          usePointStyle: true,
+                          padding: 10,
+                          font: {
+                            size: 11
+                          }
+                        }
+                      },
+                      tooltip: {
+                        callbacks: {
+                          title: function(tooltipItems) {
+                            const index = tooltipItems[0].dataIndex;
+                            if (index === 0) return "Inicio";
+                            if (index === creditConfig.term) return `Final (Pago #${creditConfig.term})`;
+                            return `Pago #${index}`;
+                          },
+                          label: function(context) {
+                            return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                          }
+                        }
+                      }
+                    },
+                    scales: {
+                      x: {
+                        title: {
+                          display: true,
+                          text: 'Pagos',
+                          font: {
+                            size: 12
+                          }
+                        },
+                        ticks: {
+                          callback: function(value) {
+                            if (value === 0) return 'Inicio';
+                            if (value === creditConfig.term) return 'Final';
+                            if (value === Math.floor(creditConfig.term * 0.25) || 
+                                value === Math.floor(creditConfig.term * 0.5) || 
+                                value === Math.floor(creditConfig.term * 0.75)) {
+                              return `#${value}`;
+                            }
+                            return '';
+                          }
+                        }
+                      },
+                      y: {
+                        title: {
+                          display: true,
+                          text: 'Monto (MXN)',
+                          font: {
+                            size: 12
+                          }
+                        },
+                        ticks: {
+                          callback: function(value) {
+                            return formatCurrency(value);
+                          }
+                        }
+                      }
+                    }
+                  }}
+                />
               </div>
               
-              {/* Barra inicial (saldo total) */}
-              <div className="mb-1 text-xs font-medium">
-                Inicio: {formatCurrency(creditConfig.financingAmount)}
+              {/* Explicación de la gráfica */}
+              <div className="text-xs text-gray-600 mt-2">
+                <p>Esta gráfica muestra la evolución del saldo pendiente, el capital pagado y los intereses pagados a lo largo del tiempo. 
+                Observa cómo el saldo pendiente (gris) disminuye mientras aumenta el capital pagado (azul) y los intereses acumulados (rojo).</p>
               </div>
-              <div className="w-full h-8 bg-gradient-to-r from-gray-300 to-gray-400 rounded-sm mb-4"></div>
-              
-              {/* Barras intermedias (cada 25% del plazo) */}
-              {[0.25, 0.5, 0.75].map((fraction) => {
-                const paymentIndex = Math.floor(creditConfig.term * fraction) - 1;
-                if (paymentIndex < 0 || paymentIndex >= amortizationData.length) return null;
-                
-                const row = amortizationData[paymentIndex];
-                const totalPaid = creditConfig.financingAmount - row.balance;
-                const totalInterestPaid = amortizationData.slice(0, paymentIndex + 1)
-                  .reduce((sum, r) => sum + r.interestPayment, 0);
-                const totalPrincipalPaid = totalPaid - totalInterestPaid;
-                
-                const principalPaidWidth = `${(totalPrincipalPaid / creditConfig.financingAmount) * 100}%`;
-                const interestPaidWidth = `${(totalInterestPaid / creditConfig.financingAmount) * 100}%`;
-                const balanceWidth = `${(row.balance / creditConfig.financingAmount) * 100}%`;
-                
-                return (
-                  <div key={`payment-${row.paymentNumber}`} className="mb-4">
-                    <div className="mb-1 text-xs font-medium">
-                      Pago #{row.paymentNumber} ({formatDate(row.paymentDate)}): {formatCurrency(row.balance)} pendiente
-                    </div>
-                    <div className="w-full h-8 flex rounded-sm overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 flex items-center justify-center"
-                        style={{ width: principalPaidWidth }}
-                      >
-                        {parseFloat(principalPaidWidth) > 15 && (
-                          <span className="text-xs text-white px-1">Capital</span>
-                        )}
-                      </div>
-                      <div 
-                        className="h-full bg-gradient-to-r from-orange-400 to-red-500 flex items-center justify-center"
-                        style={{ width: interestPaidWidth }}
-                      >
-                        {parseFloat(interestPaidWidth) > 15 && (
-                          <span className="text-xs text-white px-1">Interés</span>
-                        )}
-                      </div>
-                      <div 
-                        className="h-full bg-gradient-to-r from-gray-300 to-gray-400 flex items-center justify-center"
-                        style={{ width: balanceWidth }}
-                      >
-                        {parseFloat(balanceWidth) > 15 && (
-                          <span className="text-xs text-gray-800 px-1">Saldo</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {/* Barra final (último pago) */}
-              {amortizationData.length > 0 && (
-                <div>
-                  <div className="mb-1 text-xs font-medium">
-                    Al finalizar (Pago #{creditConfig.term}): {formatCurrency(0)} pendiente
-                  </div>
-                  <div className="w-full h-8 flex rounded-sm overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 flex items-center justify-center"
-                      style={{ 
-                        width: `${(creditConfig.financingAmount - amortizationData.reduce((sum, row) => sum + row.interestPayment, 0)) / creditConfig.financingAmount * 100}%`
-                      }}
-                    >
-                      <span className="text-xs text-white px-1">Capital</span>
-                    </div>
-                    <div 
-                      className="h-full bg-gradient-to-r from-orange-400 to-red-500 flex items-center justify-center"
-                      style={{ 
-                        width: `${amortizationData.reduce((sum, row) => sum + row.interestPayment, 0) / creditConfig.financingAmount * 100}%`
-                      }}
-                    >
-                      <span className="text-xs text-white px-1">Interés Total</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
             
             {/* Distribución de pagos */}
@@ -621,25 +758,72 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
               
               {/* Gráfica circular que muestra la distribución del primer pago */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                {/* Visualización gráfica */}
+                {/* Visualización gráfica reemplazada con Chart.js */}
                 <div className="w-full md:w-2/3">
-                  <div className="w-full h-12 flex rounded-sm overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 flex items-center justify-center text-white"
-                      style={{ 
-                        width: `${(amortizationData[0].principalPayment / amortizationData[0].payment) * 100}%`
+                  <div className="h-20">
+                    <Bar
+                      data={{
+                        labels: ['Distribución del pago mensual'],
+                        datasets: [
+                          {
+                            label: 'Capital',
+                            data: [amortizationData[0].principalPayment],
+                            backgroundColor: 'rgba(20, 184, 166, 0.8)',
+                            borderColor: 'rgba(13, 148, 136, 1)',
+                            borderWidth: 1
+                          },
+                          {
+                            label: 'Interés',
+                            data: [amortizationData[0].interestPayment],
+                            backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                            borderColor: 'rgba(217, 119, 6, 1)',
+                            borderWidth: 1
+                          }
+                        ]
                       }}
-                    >
-                      <span className="text-xs md:text-sm">Capital</span>
-                    </div>
-                    <div 
-                      className="h-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-white"
-                      style={{ 
-                        width: `${(amortizationData[0].interestPayment / amortizationData[0].payment) * 100}%`
+                      options={{
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                          x: {
+                            stacked: true,
+                            ticks: {
+                              display: false
+                            },
+                            grid: {
+                              display: false
+                            }
+                          },
+                          y: {
+                            stacked: true,
+                            ticks: {
+                              display: false
+                            },
+                            grid: {
+                              display: false
+                            }
+                          }
+                        },
+                        plugins: {
+                          legend: {
+                            display: false
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: function(context) {
+                                const label = context.dataset.label;
+                                const value = context.raw;
+                                const percentage = context.dataset.label === 'Capital' 
+                                  ? ((amortizationData[0].principalPayment / amortizationData[0].payment) * 100).toFixed(1)
+                                  : ((amortizationData[0].interestPayment / amortizationData[0].payment) * 100).toFixed(1);
+                                return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                              }
+                            }
+                          }
+                        }
                       }}
-                    >
-                      <span className="text-xs md:text-sm">Interés</span>
-                    </div>
+                    />
                   </div>
                   
                   {/* Etiquetas de porcentaje */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { 
   IoPlayCircleOutline, 
@@ -10,6 +10,36 @@ import {
   IoInformationCircleOutline,
   IoGitCompareOutline
 } from 'react-icons/io5';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  RadialLinearScale,
+  Filler,
+  DoughnutController
+} from 'chart.js';
+import { Bar, Doughnut, Radar, Line } from 'react-chartjs-2';
+
+// Registrar los componentes necesarios de Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  RadialLinearScale,
+  Filler,
+  DoughnutController
+);
 import bbvaLogo from '../assets/bbva.png';
 import banorteLogo from '../assets/banorte.png';
 import santanderLogo from '../assets/santander.png';
@@ -54,29 +84,55 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
   const [useCustomCat, setUseCustomCat] = useState(false);
   const [customCat, setCustomCat] = useState("");
   
-  // Estado para controlar la actualización del enganche
-  const [isUpdatingFromPercentage, setIsUpdatingFromPercentage] = useState(false);
+  // Refs para control de debounce
   const debounceTimerRef = useRef(null);
+  const isFirstRenderRef = useRef(true);
+  const previousDownPaymentPercentageRef = useRef(downPaymentPercentage);
+  const previousVehiclesValueRef = useRef(vehiclesValue);
   
   // Calcular monto a financiar
-  const financingAmount = vehiclesValue - downPaymentAmount;
+  const financingAmount = vehiclesValue - (downPaymentAmount || 0);
 
-  // Actualizar monto de enganche cuando cambia el porcentaje
-  useEffect(() => {
-    if (vehiclesValue > 0 && isUpdatingFromPercentage) {
-      setDownPaymentAmount((vehiclesValue * downPaymentPercentage) / 100);
-      setIsUpdatingFromPercentage(false);
+  // Función memoizada para actualizar el monto de enganche basado en porcentaje
+  const updateDownPaymentFromPercentage = useCallback(() => {
+    if (vehiclesValue > 0 && typeof downPaymentPercentage === 'number') {
+      const newAmount = (vehiclesValue * downPaymentPercentage) / 100;
+      setDownPaymentAmount(Math.round(newAmount));
     }
-  }, [downPaymentPercentage, vehiclesValue, isUpdatingFromPercentage]);
+  }, [vehiclesValue, downPaymentPercentage]);
+
+  // Actualizar monto de enganche cuando cambia el porcentaje, con control para evitar ciclos
+  useEffect(() => {
+    // Omitir el primer renderizado
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      previousDownPaymentPercentageRef.current = downPaymentPercentage;
+      previousVehiclesValueRef.current = vehiclesValue;
+      return;
+    }
+
+    // Solo actualizar si realmente cambió el porcentaje o el valor del vehículo
+    const percentageChanged = previousDownPaymentPercentageRef.current !== downPaymentPercentage;
+    const vehicleValueChanged = previousVehiclesValueRef.current !== vehiclesValue;
+    
+    if ((percentageChanged || vehicleValueChanged) && vehiclesValue > 0) {
+      updateDownPaymentFromPercentage();
+      previousDownPaymentPercentageRef.current = downPaymentPercentage;
+      previousVehiclesValueRef.current = vehiclesValue;
+    }
+  }, [downPaymentPercentage, vehiclesValue, updateDownPaymentFromPercentage]);
 
   // Controlador para cambio de porcentaje desde el slider o input numérico
-  const handleDownPaymentPercentageChange = (value) => {
-    setIsUpdatingFromPercentage(true);
-    setDownPaymentPercentage(Number(value));
-  };
+  const handleDownPaymentPercentageChange = useCallback((value) => {
+    // Asegurarnos de que el valor es un número válido
+    const numValue = Number(value);
+    if (!isNaN(numValue)) {
+      setDownPaymentPercentage(numValue);
+    }
+  }, []);
 
   // Función para actualizar el porcentaje basado en el monto del enganche
-  const handleDownPaymentAmountChange = (value) => {
+  const handleDownPaymentAmountChange = useCallback((value) => {
     // Permitir que el usuario borre el campo completamente
     if (value === '' || value === null) {
       setDownPaymentAmount('');
@@ -109,11 +165,16 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
         // Calculamos el nuevo porcentaje solo si tenemos un valor válido
         if (vehiclesValue > 0) {
           const newPercentage = Math.min(60, Math.max(10, (newAmount * 100) / vehiclesValue));
-          setDownPaymentPercentage(Math.round(newPercentage));
+          // Usar una función de actualización para garantizar el valor más reciente
+          setDownPaymentPercentage(prev => {
+            const rounded = Math.round(newPercentage);
+            // Evitar actualizaciones innecesarias que pueden causar ciclos
+            return prev === rounded ? prev : rounded;
+          });
         }
       }, 500); // 500ms de debounce
     }
-  };
+  }, [vehiclesValue]);
   // Animaciones
   const formAnimation = {
     hidden: { opacity: 0 },
@@ -176,35 +237,67 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
     return (amount * monthlyRate * factor) / (factor - 1);
   };
 
-  // Calcular vista previa de resultados
+  // Calcular vista previa de resultados - optimizado para evitar ciclos
+  const calculatePreviewRef = useRef(null);
+  
   useEffect(() => {
-    if (selectedBankId && vehiclesValue > 0) {
-      const selectedBank = BANCOS.find(bank => bank.id === selectedBankId);
-      if (selectedBank) {
-        // Usar tasa personalizada si está habilitada, de lo contrario usar la tasa del banco
-        const effectiveRate = useCustomRate ? customRate : selectedBank.tasa;
-        
-        const payment = calculateMonthlyPayment(financingAmount, effectiveRate, term);
-        const totalAmount = payment * term;
-        const totalInterest = totalAmount - financingAmount;
-        const openingCommission = (financingAmount * selectedBank.comision) / 100;
-        
-        setCalculationPreview({
-          bank: {
-            ...selectedBank,
-            tasa: effectiveRate, // Usar la tasa efectiva
-          },
-          monthlyPayment: payment,
-          totalAmount,
-          totalInterest,
-          openingCommission,
-          financingAmount
-        });
-      }
-    } else {
-      setCalculationPreview(null);
+    // Si ya hay un cálculo pendiente, cancelarlo
+    if (calculatePreviewRef.current) {
+      clearTimeout(calculatePreviewRef.current);
     }
-  }, [selectedBankId, downPaymentPercentage, term, vehiclesValue, useCustomRate, customRate]);
+    
+    // Programar el cálculo para evitar múltiples actualizaciones rápidas
+    calculatePreviewRef.current = setTimeout(() => {
+      if (selectedBankId && vehiclesValue > 0) {
+        const selectedBank = BANCOS.find(bank => bank.id === selectedBankId);
+        if (selectedBank) {
+          // Usar tasa personalizada si está habilitada, de lo contrario usar la tasa del banco
+          const effectiveRate = useCustomRate ? customRate : selectedBank.tasa;
+          
+          const payment = calculateMonthlyPayment(financingAmount, effectiveRate, term);
+          const totalAmount = payment * term;
+          const totalInterest = totalAmount - financingAmount;
+          const openingCommission = (financingAmount * selectedBank.comision) / 100;
+          
+          setCalculationPreview(prev => {
+            // Comprobación para evitar actualización si no hay cambios reales
+            if (prev && 
+                prev.bank.id === selectedBank.id && 
+                prev.monthlyPayment === payment && 
+                prev.totalAmount === totalAmount &&
+                prev.totalInterest === totalInterest &&
+                prev.openingCommission === openingCommission &&
+                prev.financingAmount === financingAmount) {
+              return prev;
+            }
+            
+            return {
+              bank: {
+                ...selectedBank,
+                tasa: effectiveRate, // Usar la tasa efectiva
+              },
+              monthlyPayment: payment,
+              totalAmount,
+              totalInterest,
+              openingCommission,
+              financingAmount
+            };
+          });
+        }
+      } else {
+        setCalculationPreview(null);
+      }
+      
+      calculatePreviewRef.current = null;
+    }, 100);
+    
+    // Cleanup para cancelar el timer si el componente se desmonta
+    return () => {
+      if (calculatePreviewRef.current) {
+        clearTimeout(calculatePreviewRef.current);
+      }
+    };
+  }, [selectedBankId, downPaymentAmount, term, vehiclesValue, useCustomRate, customRate, financingAmount]);
 
   // Función para manejar la selección/deselección de bancos para comparación
   const toggleBankSelection = (bankId) => {
@@ -245,21 +338,45 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
     });
   };
   
-  // Notificar cambios en la configuración
+  // Notificar cambios en la configuración - con debounce para evitar actualizaciones excesivas
+  const notifyChangesRef = useRef(null);
+  
   useEffect(() => {
-    onCreditConfigChange({
-      downPaymentPercentage,
-      downPaymentAmount,
-      term,
-      selectedBankId,
-      selectedBanks,
-      financingAmount,
-      useCustomRate,
-      customRate,
-      useCustomCat,
-      customCat,
-      customizedBanks
-    });
+    // Evitar el primer renderizado
+    if (isFirstRenderRef.current) {
+      return;
+    }
+    
+    // Si ya hay una notificación pendiente, cancelarla
+    if (notifyChangesRef.current) {
+      clearTimeout(notifyChangesRef.current);
+    }
+    
+    // Programar la notificación con un debounce
+    notifyChangesRef.current = setTimeout(() => {
+      onCreditConfigChange({
+        downPaymentPercentage,
+        downPaymentAmount,
+        term,
+        selectedBankId,
+        selectedBanks,
+        financingAmount,
+        useCustomRate,
+        customRate,
+        useCustomCat,
+        customCat,
+        customizedBanks
+      });
+      
+      notifyChangesRef.current = null;
+    }, 300);
+    
+    // Cleanup para cancelar el timer si el componente se desmonta
+    return () => {
+      if (notifyChangesRef.current) {
+        clearTimeout(notifyChangesRef.current);
+      }
+    };
   }, [
     downPaymentPercentage, 
     term, 
@@ -271,7 +388,8 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
     useCustomCat, 
     customCat, 
     customizedBanks, 
-    onCreditConfigChange
+    onCreditConfigChange,
+    financingAmount
   ]);
 
   // Calcular resultados para todos los bancos o solo los seleccionados
@@ -376,27 +494,70 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
               </div>
             </div>
 
-            {/* Barra visual horizontal de enganche y financiamiento */}
-            <div className="w-full h-14 rounded-md flex overflow-hidden border-2 border-gray-300">
-              {/* Barra de enganche */}
-              <div 
-                className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 flex items-center justify-center text-white font-medium border-r-2 border-white"
-                style={{ width: `${downPaymentPercentage}%` }}
-              >
-                {downPaymentPercentage >= 15 && (
-                  <span className="text-xs md:text-sm">Enganche {downPaymentPercentage}%</span>
-                )}
-              </div>
-              
-              {/* Barra de monto a financiar */}
-              <div 
-                className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 flex items-center justify-center text-white font-medium"
-                style={{ width: `${100 - downPaymentPercentage}%` }}
-              >
-                {(100 - downPaymentPercentage) >= 15 && (
-                  <span className="text-xs md:text-sm">A financiar {100 - downPaymentPercentage}%</span>
-                )}
-              </div>
+            {/* Reemplazo de barra visual con gráfico de donut */}
+            <div className="w-full h-20 mb-2">
+              <Doughnut 
+                data={{
+                  labels: ['Enganche', 'A financiar'],
+                  datasets: [
+                    {
+                      data: [downPaymentPercentage, 100 - downPaymentPercentage],
+                      backgroundColor: [
+                        'rgba(99, 102, 241, 0.8)',
+                        'rgba(20, 184, 166, 0.8)'
+                      ],
+                      borderColor: [
+                        'rgba(79, 70, 229, 1)',
+                        'rgba(13, 148, 136, 1)'
+                      ],
+                      borderWidth: 1,
+                      cutout: '65%',
+                      hoverOffset: 5
+                    }
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  layout: {
+                    padding: 5
+                  },
+                  plugins: {
+                    legend: {
+                      display: true,
+                      position: 'bottom',
+                      labels: {
+                        generateLabels: (chart) => {
+                          const data = chart.data;
+                          if (data.labels.length && data.datasets.length) {
+                            return data.labels.map((label, i) => {
+                              const value = data.datasets[0].data[i];
+                              return {
+                                text: `${label}: ${value}%`,
+                                fillStyle: data.datasets[0].backgroundColor[i],
+                                strokeStyle: data.datasets[0].borderColor[i],
+                                lineWidth: 1,
+                                hidden: false,
+                                index: i
+                              };
+                            });
+                          }
+                          return [];
+                        }
+                      }
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          const label = context.label || '';
+                          const value = context.formattedValue || '';
+                          return `${label}: ${value}%`;
+                        }
+                      }
+                    }
+                  }
+                }}
+              />
             </div>
             
             <div className="flex justify-between text-sm text-royal-gray-600 mt-2">
@@ -410,25 +571,80 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
               </div>
             </div>
 
-            {/* Progresión del valor */}
+            {/* Progresión del valor reemplazada con un gráfico de barras horizontales */}
             <div className="mt-4 border-t border-gray-300 pt-3">
               <div className="flex justify-between mb-1">
                 <span className="text-sm font-medium">Distribución del valor</span>
                 <span className="text-sm font-bold">{formatCurrency(vehiclesValue)}</span>
               </div>
-              <div className="w-full h-8 bg-gray-200 rounded-md overflow-hidden flex">
-                <div 
-                  className="h-full bg-indigo-600 flex items-center justify-center text-xs text-white"
-                  style={{ width: `${(downPaymentAmount / vehiclesValue) * 100}%` }}
-                >
-                  {((downPaymentAmount / vehiclesValue) * 100).toFixed(1)}%
-                </div>
-                <div 
-                  className="h-full bg-teal-500 flex items-center justify-center text-xs text-white"
-                  style={{ width: `${(financingAmount / vehiclesValue) * 100}%` }}
-                >
-                  {((financingAmount / vehiclesValue) * 100).toFixed(1)}%
-                </div>
+              <div className="w-full h-14">
+                <Bar
+                  data={{
+                    labels: ['Distribución'],
+                    datasets: [
+                      {
+                        label: 'Pago inicial',
+                        data: [downPaymentAmount],
+                        backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                        borderColor: 'rgba(67, 56, 202, 1)',
+                        borderWidth: 1,
+                        barPercentage: 0.9,
+                        categoryPercentage: 0.9
+                      },
+                      {
+                        label: 'A financiar',
+                        data: [financingAmount],
+                        backgroundColor: 'rgba(20, 184, 166, 0.8)',
+                        borderColor: 'rgba(13, 148, 136, 1)',
+                        borderWidth: 1,
+                        barPercentage: 0.9,
+                        categoryPercentage: 0.9
+                      }
+                    ]
+                  }}
+                  options={{
+                    indexAxis: 'y',
+                    scales: {
+                      x: {
+                        stacked: true,
+                        grid: {
+                          display: false
+                        },
+                        ticks: {
+                          display: false
+                        }
+                      },
+                      y: {
+                        stacked: true,
+                        grid: {
+                          display: false
+                        },
+                        ticks: {
+                          display: false
+                        }
+                      }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.raw;
+                            const percentage = context.dataset.label === 'Pago inicial' 
+                              ? ((downPaymentAmount / vehiclesValue) * 100).toFixed(1) 
+                              : ((financingAmount / vehiclesValue) * 100).toFixed(1);
+                            return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                          }
+                        }
+                      }
+                    }
+                  }}
+                />
               </div>
               <div className="flex justify-between text-xs text-gray-600 mt-1">
                 <span>Pago inicial: {formatCurrency(downPaymentAmount)}</span>
@@ -549,18 +765,63 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                   <span className="font-bold">%</span>
                 </div>
               </div>
-                  {/* Barra visual horizontal de tasa de interés */}
-                  <div className="w-full h-8 rounded-md bg-gray-100 relative my-3 border-2 border-gray-300">
-                    <div 
-                      className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-l-sm flex items-center justify-center text-white text-xs font-medium"
-                      style={{ width: `${(customRate / 25) * 100}%` }}
-                    >
-                      {customRate}%
-                    </div>
-                    <div className="flex justify-between text-xs text-royal-gray-600 mt-1">
-                      <span>5%</span>
-                      <span>25%</span>
-                    </div>
+                  {/* Barra visual de tasa de interés reemplazada con gráfico de línea */}
+                  <div className="w-full h-12 my-3">
+                    <Line 
+                      data={{
+                        labels: ['5%', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '25%'],
+                        datasets: [
+                          {
+                            label: 'Tasa de interés',
+                            data: Array(20).fill(null).map((_, i) => i === Math.floor((customRate - 5) / 20 * 19) ? customRate : null),
+                            borderColor: 'rgba(217, 119, 6, 1)',
+                            backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                            pointBackgroundColor: 'rgba(217, 119, 6, 1)',
+                            pointBorderColor: '#fff',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            tension: 0.1,
+                            fill: false
+                          }
+                        ]
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                          x: {
+                            grid: {
+                              display: false
+                            },
+                            ticks: {
+                              maxRotation: 0,
+                              autoSkip: true,
+                              maxTicksLimit: 2,
+                              font: {
+                                size: 10
+                              }
+                            }
+                          },
+                          y: {
+                            display: false,
+                            min: 0,
+                            max: 30
+                          }
+                        },
+                        plugins: {
+                          legend: {
+                            display: false
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: function(context) {
+                                return `Tasa: ${context.raw}%`;
+                              }
+                            }
+                          }
+                        }
+                      }}
+                    />
                   </div>
 
               {/* CAT personalizado */}
@@ -621,18 +882,63 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                       <span className="font-bold">%</span>
                     </div>
                   </div>
-                  {/* Barra visual horizontal de CAT */}
-                  <div className="w-full h-8 rounded-md bg-gray-100 relative my-3 border-2 border-gray-300">
-                    <div 
-                      className="h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-l-sm flex items-center justify-center text-white text-xs font-medium"
-                      style={{ width: `${(customCat / 30) * 100}%` }}
-                    >
-                      {customCat}%
-                    </div>
-                    <div className="flex justify-between text-xs text-royal-gray-600 mt-1">
-                      <span>6%</span>
-                      <span>30%</span>
-                    </div>
+                  {/* Barra visual de CAT reemplazada con gráfico de línea */}
+                  <div className="w-full h-12 my-3">
+                    <Line 
+                      data={{
+                        labels: ['6%', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '30%'],
+                        datasets: [
+                          {
+                            label: 'CAT',
+                            data: Array(20).fill(null).map((_, i) => i === Math.floor((customCat - 6) / 24 * 19) ? customCat : null),
+                            borderColor: 'rgba(220, 38, 38, 1)',
+                            backgroundColor: 'rgba(248, 113, 113, 0.8)',
+                            pointBackgroundColor: 'rgba(220, 38, 38, 1)',
+                            pointBorderColor: '#fff',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            tension: 0.1,
+                            fill: false
+                          }
+                        ]
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                          x: {
+                            grid: {
+                              display: false
+                            },
+                            ticks: {
+                              maxRotation: 0,
+                              autoSkip: true,
+                              maxTicksLimit: 2,
+                              font: {
+                                size: 10
+                              }
+                            }
+                          },
+                          y: {
+                            display: false,
+                            min: 0,
+                            max: 35
+                          }
+                        },
+                        plugins: {
+                          legend: {
+                            display: false
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: function(context) {
+                                return `CAT: ${context.raw}%`;
+                              }
+                            }
+                          }
+                        }
+                      }}
+                    />
                   </div>
                 </motion.div>
               )}
@@ -843,7 +1149,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             </h4>
             
             <div className="flex flex-col space-y-6">
-              {/* Comparación del valor del vehículo vs costo total */}
+              {/* Comparación del valor del vehículo vs costo total - Reemplazo con gráfico de barras */}
               <div>
                 <div className="flex justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Costo total vs. Valor del vehículo</span>
@@ -851,73 +1157,366 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                     +{((calculationPreview.totalAmount - vehiclesValue) / vehiclesValue * 100).toFixed(1)}%
                   </span>
                 </div>
-                <div className="w-full flex flex-col space-y-3 relative">
-                  {/* Valor del vehículo */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Valor del vehículo</span>
-                      <span className="font-medium">{formatCurrency(vehiclesValue)}</span>
-                    </div>
-                    <div className="h-8 w-full bg-gradient-to-r from-gray-200 to-gray-400 rounded-sm flex items-center px-2">
-                      <span className="text-xs font-medium text-gray-800">100%</span>
-                    </div>
-                  </div>
-                  
-                  {/* Valor total a pagar (incluye intereses) */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Total a pagar (con intereses)</span>
-                      <span className="font-medium">{formatCurrency(calculationPreview.totalAmount)}</span>
-                    </div>
-                    <div className="h-8 w-full flex">
-                      <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-l-sm flex items-center px-2"
-                          style={{ width: `${(vehiclesValue / calculationPreview.totalAmount) * 100}%` }}>
-                        <span className="text-xs font-medium text-white">Vehículo</span>
-                      </div>
-                      <div className="h-full bg-gradient-to-r from-purple-500 to-purple-700 rounded-r-sm flex items-center px-2"
-                          style={{ width: `${((calculationPreview.totalAmount - vehiclesValue) / calculationPreview.totalAmount) * 100}%` }}>
-                        <span className="text-xs font-medium text-white">
-                          Intereses y comisiones
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="w-full h-40">
+                  <Bar
+                    data={{
+                      labels: ['Valor del vehículo', 'Total a pagar'],
+                      datasets: [
+                        {
+                          label: 'Vehículo',
+                          data: [vehiclesValue, vehiclesValue],
+                          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                          borderColor: 'rgba(37, 99, 235, 1)',
+                          borderWidth: 1
+                        },
+                        {
+                          label: 'Intereses y comisiones',
+                          data: [0, calculationPreview.totalAmount - vehiclesValue],
+                          backgroundColor: 'rgba(147, 51, 234, 0.7)',
+                          borderColor: 'rgba(126, 34, 206, 1)',
+                          borderWidth: 1
+                        }
+                      ]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        x: {
+                          grid: {
+                            display: false
+                          }
+                        },
+                        y: {
+                          beginAtZero: true,
+                          grid: {
+                            borderDash: [2, 4]
+                          },
+                          ticks: {
+                            callback: function(value) {
+                              return formatCurrency(value);
+                            }
+                          }
+                        }
+                      },
+                      plugins: {
+                        legend: {
+                          position: 'bottom'
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: function(context) {
+                              const label = context.dataset.label || '';
+                              const value = context.raw;
+                              const percentage = (value / calculationPreview.totalAmount * 100).toFixed(1);
+                              return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                            }
+                          }
+                        }
+                      }
+                    }}
+                  />
                 </div>
               </div>
               
-              {/* Desglose detallado */}
-              <div className="border-t border-gray-300 pt-3">
-                <div className="text-sm font-medium mb-2">Desglose de pagos</div>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-blue-100 p-2 rounded">
-                    <div className="text-xs text-blue-800">Valor del vehículo</div>
-                    <div className="font-bold text-blue-600">{formatCurrency(vehiclesValue)}</div>
-                  </div>
-                  <div className="bg-purple-100 p-2 rounded">
-                    <div className="text-xs text-purple-800">Intereses</div>
-                    <div className="font-bold text-purple-600">{formatCurrency(calculationPreview.totalInterest)}</div>
-                  </div>
-                  <div className="bg-amber-100 p-2 rounded">
-                    <div className="text-xs text-amber-800">Comisión</div>
-                    <div className="font-bold text-amber-600">{formatCurrency(calculationPreview.openingCommission)}</div>
+              {/* Evaluación cualitativa del crédito */}
+              <div className="border-t border-gray-300 pt-4 mt-4">
+                <div className="text-sm font-medium mb-3">Evaluación del crédito</div>
+                
+                {/* Cálculo de métricas y evaluaciones cualitativas */}
+                {(() => {
+                  // Calcular porcentaje del costo adicional
+                  const totalInterest = calculationPreview.totalInterest;
+                  const openingFee = calculationPreview.openingCommission;
+                  const principal = calculationPreview.financingAmount;
+                  const totalCost = totalInterest + openingFee;
+                  const costPercentage = (totalCost / principal) * 100;
+                  
+                  // Evaluación cualitativa del costo
+                  let costRating = "";
+                  if (costPercentage <= 15) {
+                    costRating = "Bueno";
+                  } else if (costPercentage <= 25) {
+                    costRating = "Enorme";
+                  } else if (costPercentage <= 35) {
+                    costRating = "Terrible";
+                  } else {
+                    costRating = "Feo";
+                  }
+                  
+                  // Evaluación según CAT vs tasa nominal
+                  const effectiveRate = useCustomRate ? customRate : calculationPreview.bank.tasa;
+                  const effectiveCat = useCustomCat ? customCat : calculationPreview.bank.cat;
+                  const catVsRateDiff = effectiveCat - effectiveRate;
+                  
+                  let rateRating = "";
+                  if (catVsRateDiff <= 3) {
+                    rateRating = "Bueno";
+                  } else if (catVsRateDiff <= 5) {
+                    rateRating = "Enorme";
+                  } else if (catVsRateDiff <= 8) {
+                    rateRating = "Terrible";
+                  } else {
+                    rateRating = "Feo";
+                  }
+                  
+                  // Evaluación según plazo vs depreciación
+                  const termRating = term <= 36 ? "Bueno" : term <= 48 ? "Enorme" : term <= 60 ? "Terrible" : "Feo";
+                  
+                  // Puntuación general del crédito (promedio ponderado de los factores)
+                  const costScore = Math.max(0, Math.min(100, 100 - (costPercentage * 2)));
+                  const rateScore = Math.max(0, Math.min(100, 100 - (catVsRateDiff * 10)));
+                  const termScore = Math.max(0, Math.min(100, 100 - ((term / 60) * 100)));
+                  
+                  const overallScore = (costScore * 0.5) + (rateScore * 0.3) + (termScore * 0.2);
+                  let overallRating = "";
+                  if (overallScore >= 75) {
+                    overallRating = "Bueno";
+                  } else if (overallScore >= 50) {
+                    overallRating = "Enorme";
+                  } else if (overallScore >= 25) {
+                    overallRating = "Terrible";
+                  } else {
+                    overallRating = "Feo";
+                  }
+                  
+                  return (
+                    <div className="space-y-6">
+                      {/* Gráfico de radar para evaluación general */}
+                      <div className="h-64">
+                        <Radar
+                          data={{
+                            labels: ['Costo Total', 'CAT vs Tasa', 'Plazo', 'Calificación General'],
+                            datasets: [
+                              {
+                                label: 'Puntuación (Mayor es mejor)',
+                                data: [costScore, rateScore, termScore, overallScore],
+                                backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                                borderColor: 'rgba(79, 70, 229, 1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: [
+                                  costRating === 'Bueno' ? 'rgba(16, 185, 129, 1)' : 
+                                  costRating === 'Enorme' ? 'rgba(245, 158, 11, 1)' : 
+                                  costRating === 'Terrible' ? 'rgba(249, 115, 22, 1)' : 'rgba(239, 68, 68, 1)',
+                                  
+                                  rateRating === 'Bueno' ? 'rgba(16, 185, 129, 1)' : 
+                                  rateRating === 'Enorme' ? 'rgba(245, 158, 11, 1)' : 
+                                  rateRating === 'Terrible' ? 'rgba(249, 115, 22, 1)' : 'rgba(239, 68, 68, 1)',
+                                  
+                                  termRating === 'Bueno' ? 'rgba(16, 185, 129, 1)' : 
+                                  termRating === 'Enorme' ? 'rgba(245, 158, 11, 1)' : 
+                                  termRating === 'Terrible' ? 'rgba(249, 115, 22, 1)' : 'rgba(239, 68, 68, 1)',
+                                  
+                                  overallRating === 'Bueno' ? 'rgba(16, 185, 129, 1)' : 
+                                  overallRating === 'Enorme' ? 'rgba(245, 158, 11, 1)' : 
+                                  overallRating === 'Terrible' ? 'rgba(249, 115, 22, 1)' : 'rgba(239, 68, 68, 1)'
+                                ],
+                                pointBorderColor: '#fff',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: 'rgba(79, 70, 229, 1)',
+                                pointRadius: 5,
+                                pointHoverRadius: 7
+                              }
+                            ]
+                          }}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                              r: {
+                                min: 0,
+                                max: 100,
+                                ticks: {
+                                  display: false
+                                },
+                                pointLabels: {
+                                  font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                  }
+                                }
+                              }
+                            },
+                            plugins: {
+                              legend: {
+                                display: false
+                              },
+                              tooltip: {
+                                callbacks: {
+                                  label: function(context) {
+                                    const index = context.dataIndex;
+                                    const value = context.raw;
+                                    const labels = ['Costo Total', 'CAT vs Tasa', 'Plazo', 'Calificación General'];
+                                    const ratings = [costRating, rateRating, termRating, overallRating];
+                                    return `${labels[index]}: ${value.toFixed(1)}/100 (${ratings[index]})`;
+                                  }
+                                }
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Calificaciones resumidas en tarjetas */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        {/* Calificación general */}
+                        <div className={`p-3 rounded-lg ${
+                          overallRating === 'Bueno' ? 'bg-emerald-50 border border-emerald-200' :
+                          overallRating === 'Enorme' ? 'bg-amber-50 border border-amber-200' :
+                          overallRating === 'Terrible' ? 'bg-orange-50 border border-orange-200' :
+                          'bg-red-50 border border-red-200'
+                        }`}>
+                          <div className="text-xs uppercase font-medium mb-1 text-gray-500">Calificación General</div>
+                          <div className={`text-lg font-bold ${
+                            overallRating === 'Bueno' ? 'text-emerald-600' :
+                            overallRating === 'Enorme' ? 'text-amber-600' :
+                            overallRating === 'Terrible' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {overallRating}
+                          </div>
+                          <div className="text-xs mt-1 text-gray-600">
+                            Coste: {costPercentage.toFixed(1)}% adicional
+                          </div>
+                        </div>
+                        
+                        {/* Desglose de los factores */}
+                        <div className={`p-3 rounded-lg ${
+                          costRating === 'Bueno' ? 'bg-emerald-50 border border-emerald-200' :
+                          costRating === 'Enorme' ? 'bg-amber-50 border border-amber-200' :
+                          costRating === 'Terrible' ? 'bg-orange-50 border border-orange-200' :
+                          'bg-red-50 border border-red-200'
+                        }`}>
+                          <div className="text-xs uppercase font-medium mb-1 text-gray-500">Costo Total</div>
+                          <div className={`text-lg font-bold ${
+                            costRating === 'Bueno' ? 'text-emerald-600' :
+                            costRating === 'Enorme' ? 'text-amber-600' :
+                            costRating === 'Terrible' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {costRating}
+                          </div>
+                          <div className="text-xs mt-1 text-gray-600">
+                            {formatCurrency(totalCost)}
+                          </div>
+                        </div>
+                        
+                        <div className={`p-3 rounded-lg ${
+                          rateRating === 'Bueno' ? 'bg-emerald-50 border border-emerald-200' :
+                          rateRating === 'Enorme' ? 'bg-amber-50 border border-amber-200' :
+                          rateRating === 'Terrible' ? 'bg-orange-50 border border-orange-200' :
+                          'bg-red-50 border border-red-200'
+                        }`}>
+                          <div className="text-xs uppercase font-medium mb-1 text-gray-500">CAT vs Tasa</div>
+                          <div className={`text-lg font-bold ${
+                            rateRating === 'Bueno' ? 'text-emerald-600' :
+                            rateRating === 'Enorme' ? 'text-amber-600' :
+                            rateRating === 'Terrible' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {rateRating}
+                          </div>
+                          <div className="text-xs mt-1 text-gray-600">
+                            Diferencia: {formatPercentage(catVsRateDiff)}
+                          </div>
+                        </div>
+                        
+                        <div className={`p-3 rounded-lg ${
+                          termRating === 'Bueno' ? 'bg-emerald-50 border border-emerald-200' :
+                          termRating === 'Enorme' ? 'bg-amber-50 border border-amber-200' :
+                          termRating === 'Terrible' ? 'bg-orange-50 border border-orange-200' :
+                          'bg-red-50 border border-red-200'
+                        }`}>
+                          <div className="text-xs uppercase font-medium mb-1 text-gray-500">Plazo</div>
+                          <div className={`text-lg font-bold ${
+                            termRating === 'Bueno' ? 'text-emerald-600' :
+                            termRating === 'Enorme' ? 'text-amber-600' :
+                            termRating === 'Terrible' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {termRating}
+                          </div>
+                          <div className="text-xs mt-1 text-gray-600">
+                            {term} meses
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Desglose detallado */}
+                <div className="mt-4">
+                  <div className="text-sm font-medium mb-2">Desglose de pagos</div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-blue-100 p-2 rounded">
+                      <div className="text-xs text-blue-800">Valor del vehículo</div>
+                      <div className="font-bold text-blue-600">{formatCurrency(vehiclesValue)}</div>
+                    </div>
+                    <div className="bg-purple-100 p-2 rounded">
+                      <div className="text-xs text-purple-800">Intereses</div>
+                      <div className="font-bold text-purple-600">{formatCurrency(calculationPreview.totalInterest)}</div>
+                    </div>
+                    <div className="bg-amber-100 p-2 rounded">
+                      <div className="text-xs text-amber-800">Comisión</div>
+                      <div className="font-bold text-amber-600">{formatCurrency(calculationPreview.openingCommission)}</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
           <h3 className="govuk-form-section-title">
-            <div className="flex items-center">
-              {React.isValidElement(calculationPreview.bank.logo) ? (
-                <div className="mr-2 text-royal-black">{calculationPreview.bank.logo}</div>
-              ) : (
-                <img src={calculationPreview.bank.logo} alt={calculationPreview.bank.nombre} className="h-8 mr-2" />
-              )}
-              Vista previa con {calculationPreview.bank.nombre}
-              {useCustomRate && (
-                <span className="ml-2 text-sm">
-                  (Tasa personalizada: {(customRate === "" || isNaN(customRate)) ? "0.00" : Number(customRate).toFixed(2)}%)
-                </span>
-              )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {React.isValidElement(calculationPreview.bank.logo) ? (
+                  <div className="mr-2 text-royal-black">{calculationPreview.bank.logo}</div>
+                ) : (
+                  <img src={calculationPreview.bank.logo} alt={calculationPreview.bank.nombre} className="h-8 mr-2" />
+                )}
+                Vista previa con {calculationPreview.bank.nombre}
+                {useCustomRate && (
+                  <span className="ml-2 text-sm">
+                    (Tasa personalizada: {(customRate === "" || isNaN(customRate)) ? "0.00" : Number(customRate).toFixed(2)}%)
+                  </span>
+                )}
+              </div>
+              
+              {/* Calificación de costo en forma de distintivo */}
+              {(() => {
+                // Calcular costo adicional porcentual
+                const totalCost = calculationPreview.totalInterest + calculationPreview.openingCommission;
+                const costPercentage = (totalCost / calculationPreview.financingAmount) * 100;
+                
+                // Determinar calificación
+                let costRating = "";
+                let bgColor = "";
+                let textColor = "";
+                
+                if (costPercentage <= 15) {
+                  costRating = "Bueno";
+                  bgColor = "bg-emerald-100";
+                  textColor = "text-emerald-800";
+                } else if (costPercentage <= 25) {
+                  costRating = "Enorme";
+                  bgColor = "bg-amber-100";
+                  textColor = "text-amber-800";
+                } else if (costPercentage <= 35) {
+                  costRating = "Terrible";
+                  bgColor = "bg-orange-100";
+                  textColor = "text-orange-800";
+                } else {
+                  costRating = "Feo";
+                  bgColor = "bg-red-100";
+                  textColor = "text-red-800";
+                }
+                
+                return (
+                  <div className={`px-3 py-1 rounded-full ${bgColor} ${textColor} text-sm font-bold`}>
+                    Costo: {costRating} ({costPercentage.toFixed(1)}%)
+                  </div>
+                );
+              })()}
             </div>
           </h3>
           
