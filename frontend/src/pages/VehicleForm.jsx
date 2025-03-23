@@ -4,11 +4,10 @@ import { IoAddOutline, IoTrashOutline } from 'react-icons/io5';
 
 const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle }) => {
   const [newVehicle, setNewVehicle] = useState({
-    descripcion: '',
     marca: '',
     modelo: '',
     año: new Date().getFullYear(),
-    valor: 300000
+    valor: ''
   });
 
   // Generar ID único
@@ -27,10 +26,21 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
   // Manejar cambios en el formulario de nuevo vehículo
   const handleNewVehicleChange = (e) => {
     const { name, value } = e.target;
-    setNewVehicle({
-      ...newVehicle,
-      [name]: name === 'valor' || name === 'año' ? Number(value) : value
-    });
+    
+    if (name === 'valor') {
+      // Si el campo es valor, y el valor está vacío, mantenerlo vacío
+      // de lo contrario, convertirlo a número
+      const newValue = value === '' ? '' : Number(value);
+      setNewVehicle({
+        ...newVehicle,
+        [name]: newValue
+      });
+    } else {
+      setNewVehicle({
+        ...newVehicle,
+        [name]: name === 'año' ? Number(value) : value
+      });
+    }
   };
 
   // Manejar submit del formulario
@@ -38,7 +48,7 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
     e.preventDefault();
     
     // Verificar que los campos obligatorios estén completos
-    if (!newVehicle.descripcion || !newVehicle.marca || !newVehicle.modelo || !newVehicle.valor) {
+    if (!newVehicle.marca || !newVehicle.modelo || !newVehicle.valor) {
       alert('Por favor completa todos los campos obligatorios');
       return;
     }
@@ -51,11 +61,10 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
     
     // Limpiar el formulario
     setNewVehicle({
-      descripcion: '',
       marca: '',
       modelo: '',
       año: new Date().getFullYear(),
-      valor: 300000
+      valor: ''
     });
   };
 
@@ -107,20 +116,6 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
         <h3 className="govuk-form-section-title">Agregar nuevo vehículo</h3>
         <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
          
-          <motion.div className="govuk-form-group" variants={itemAnimation}>
-            <label htmlFor="descripcion" className="govuk-label">
-              Descripción <span className="text-royal-red">*</span>
-            </label>
-            <input
-              type="text"
-              id="descripcion"
-              name="descripcion"
-              value={newVehicle.descripcion}
-              onChange={handleNewVehicleChange}
-              className="govuk-input"
-              required
-            />
-          </motion.div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div className="govuk-form-group" variants={itemAnimation}>
@@ -187,6 +182,7 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                 value={newVehicle.valor}
                 onChange={handleNewVehicleChange}
                 className="govuk-input govuk-input-with-prefix text-right"
+                placeholder="Ingresa el valor"
                 required
               />
             </div>
@@ -201,7 +197,7 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
               min="50000"
               max="3000000"
               step="10000"
-              value={newVehicle.valor}
+              value={newVehicle.valor || 300000}
               onChange={(e) => handleNewVehicleChange({ target: { name: 'valor', value: e.target.value } })}
               className="govuk-slider"
             />
@@ -237,7 +233,6 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
             <table className="govuk-table min-w-full">
               <thead className="hidden sm:table-header-group">
                 <tr>
-                  <th scope="col" className="govuk-table__header">Descripción</th>
                   <th scope="col" className="govuk-table__header">Marca/Modelo</th>
                   <th scope="col" className="govuk-table__header">Año</th>
                   <th scope="col" className="govuk-table__header">Valor</th>
@@ -254,10 +249,6 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                     transition={{ duration: 0.3 }}
                     className="sm:table-row flex flex-col border-b border-gray-200 pb-3 mb-3 sm:pb-0 sm:mb-0"
                   >
-                    <td className="govuk-table__cell sm:table-cell block" data-label="Descripción:">
-                      <span className="sm:hidden font-bold inline-block mb-1">Descripción:</span>
-                      {vehicle.descripcion}
-                    </td>
                     <td className="govuk-table__cell sm:table-cell block" data-label="Marca/Modelo:">
                       <span className="sm:hidden font-bold inline-block mb-1">Marca/Modelo:</span>
                       {vehicle.marca} {vehicle.modelo}
