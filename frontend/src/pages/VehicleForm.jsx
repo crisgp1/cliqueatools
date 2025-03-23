@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { IoAddOutline, IoTrashOutline } from 'react-icons/io5';
+import { IoAddOutline, IoTrashOutline, IoCarSportOutline, IoCalculatorOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
+import Modal from './Modal';
 
 const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle }) => {
   const [newVehicle, setNewVehicle] = useState({
@@ -9,6 +10,23 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
     año: new Date().getFullYear(),
     valor: ''
   });
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  
+  // Comprueba si el modal ya se mostró para esta sesión
+  const checkIfModalShown = () => {
+    return localStorage.getItem('vehicleInfoModalShown') === 'true';
+  };
+  
+  // Marca el modal como mostrado en localStorage
+  const markModalAsShown = () => {
+    localStorage.setItem('vehicleInfoModalShown', 'true');
+  };
+  
+  // Cierra el modal y lo marca como ya mostrado
+  const handleCloseModal = () => {
+    setShowInfoModal(false);
+    markModalAsShown();
+  };
 
   // Generar ID único
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -66,6 +84,11 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
       año: new Date().getFullYear(),
       valor: ''
     });
+    
+    // Mostrar el modal informativo solo si no se ha mostrado antes
+    if (!checkIfModalShown()) {
+      setShowInfoModal(true);
+    }
   };
 
   // Variantes de animación para los elementos
@@ -105,8 +128,84 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
     }
   };
 
+  // Elementos de animación para el contenido del modal
+  const containerAnimation = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+  
+  const modalItemAnimation = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 24
+      }
+    }
+  };
+
   return (
     <div className="space-y-8">
+      {/* Modal Informativo */}
+      <Modal 
+        isOpen={showInfoModal} 
+        onClose={handleCloseModal}
+        title="¡Vehículo registrado con éxito!"
+        size="md"
+      >
+        <motion.div
+          className="space-y-6"
+          variants={containerAnimation}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div className="flex items-center justify-center" variants={modalItemAnimation}>
+            <div className="bg-green-100 p-3 rounded-full">
+              <IoCheckmarkDoneOutline className="text-green-600 h-12 w-12" />
+            </div>
+          </motion.div>
+          
+          <motion.p className="text-center text-lg" variants={modalItemAnimation}>
+            Has registrado exitosamente un vehículo en tu inventario.
+            Ahora puedes realizar las siguientes operaciones:
+          </motion.p>
+          
+          <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-4" variants={modalItemAnimation}>
+            <div className="bg-royal-gray-100 p-4 rounded-md">
+              <div className="flex items-center mb-2">
+                <IoCalculatorOutline className="text-royal-black h-6 w-6 mr-2" />
+                <h4 className="font-bold">Simular crédito</h4>
+              </div>
+              <p className="text-sm">Calcula opciones de financiamiento para este vehículo con diferentes plazos y tasas.</p>
+            </div>
+            
+            <div className="bg-royal-gray-100 p-4 rounded-md">
+              <div className="flex items-center mb-2">
+                <IoCarSportOutline className="text-royal-black h-6 w-6 mr-2" />
+                <h4 className="font-bold">Realizar compraventa</h4>
+              </div>
+              <p className="text-sm">Inicia el proceso de compraventa generando un contrato para este vehículo.</p>
+            </div>
+          </motion.div>
+          
+          <motion.div className="flex justify-center mt-4" variants={modalItemAnimation}>
+            <button
+              onClick={handleCloseModal}
+              className="govuk-button"
+            >
+              Entendido
+            </button>
+          </motion.div>
+        </motion.div>
+      </Modal>
       <motion.div 
         className="govuk-form-section"
         initial="hidden"
@@ -129,7 +228,6 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                 value={newVehicle.marca}
                 onChange={handleNewVehicleChange}
                 className="govuk-input"
-                required
               />
             </motion.div>
             
@@ -144,7 +242,6 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                 value={newVehicle.modelo}
                 onChange={handleNewVehicleChange}
                 className="govuk-input"
-                required
               />
             </motion.div>
           </div>
@@ -157,8 +254,6 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
               type="number"
               id="año"
               name="año"
-              min="2000"
-              max={new Date().getFullYear() + 1}
               value={newVehicle.año}
               onChange={handleNewVehicleChange}
               className="govuk-input"
@@ -176,14 +271,10 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
                 type="number"
                 id="valor"
                 name="valor"
-                min="50000"
-                max="3000000"
-                step="10000"
                 value={newVehicle.valor}
                 onChange={handleNewVehicleChange}
                 className="govuk-input govuk-input-with-prefix text-right"
                 placeholder="Ingresa el valor"
-                required
               />
             </div>
             
@@ -194,9 +285,6 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
             
             <input
               type="range"
-              min="50000"
-              max="3000000"
-              step="10000"
               value={newVehicle.valor || 300000}
               onChange={(e) => handleNewVehicleChange({ target: { name: 'valor', value: e.target.value } })}
               className="govuk-slider"

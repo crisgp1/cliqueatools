@@ -13,7 +13,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     ciudad: '',
     fecha: formattedDate,
     hora: formattedTime,
-    
+
     // Información del comprador
     nombreComprador: client.nombre ? `${client.nombre} ${client.apellidos || ''}` : '',
     domicilioComprador: client.direccion || '',
@@ -21,7 +21,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     emailComprador: client.email || '',
     identificacionComprador: '',
     numeroIdentificacion: '',
-    
+
     // Información del vehículo
     marca: vehicles.length > 0 ? vehicles[0].marca || '' : '',
     modelo: vehicles.length > 0 ? vehicles[0].modelo || '' : '',
@@ -34,12 +34,12 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     numeroFactura: '',
     refrendos: '',
     rfcVehiculo: '',
-    
+
     // Información de pago
     precioTotal: vehicles.length > 0 ? vehicles[0].valor || 0 : 0,
     precioTotalTexto: '',
     formaPago: 'Transferencia bancaria',
-    
+
     // Observaciones adicionales
     observaciones: ''
   });
@@ -65,7 +65,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     const unidades = ['', 'un', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
     const decenas = ['', 'diez', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
     const centenas = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
-    
+
     // Simplificado para el propósito de este ejemplo
     return `${numero} pesos 00/100 M.N.`;
   };
@@ -73,7 +73,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   // Manejar cambios en los campos
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === 'precioTotal') {
       const numValue = parseFloat(value);
       if (!isNaN(numValue)) {
@@ -111,7 +111,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     });
     setShowIdCopyModal(false);
   };
-  
+
   // Mostrar modal de recordatorio de copia de ID
   const showIdCopyReminder = () => {
     if (!idModalShown) {
@@ -119,49 +119,49 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
       setShowIdCopyModal(true);
     }
   };
-  
+
   // Estado para las firmas
   const [signatureType, setSignatureType] = useState(''); // 'vendor' o 'buyer'
   const [signatures, setSignatures] = useState({
     vendor: null,
     buyer: null
   });
-  
+
   // Referencias para el canvas de firma
   const signatureCanvasRef = useRef(null);
   const signatureWindowRef = useRef(null);
-  
+
   // Mostrar modal de recordatorio de comprobante de domicilio
   const showAddressProofReminder = () => {
     setShowAddressProofModal(true);
   };
-  
+
   // Verificar si la dirección está completa
   const checkAddressComplete = () => {
     if (!contractData.domicilioComprador || contractData.domicilioComprador.trim() === '') {
       showAddressProofReminder();
     }
   };
-  
+
   // Manejar apertura de la ventana de firma
   const handleOpenSignatureWindow = (type) => {
     setSignatureType(type);
-    
+
     // Calcular dimensiones y posición de la ventana
     const width = 600;
     const height = 400;
     const left = (window.innerWidth - width) / 2;
     const top = (window.innerHeight - height) / 2;
-    
+
     // Abrir una nueva ventana
     const signatureWindow = window.open(
       '',
       'signatureWindow',
       `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
     );
-    
+
     signatureWindowRef.current = signatureWindow;
-    
+
     // Escribir el contenido HTML de la ventana
     signatureWindow.document.write(`
       <html>
@@ -362,10 +362,10 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
         </body>
       </html>
     `);
-    
+
     signatureWindow.document.close();
   };
-  
+
   // Efecto para recibir mensajes de la ventana de firma
   useEffect(() => {
     const handleMessage = (event) => {
@@ -378,10 +378,10 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
         });
       }
     };
-    
+
     // Agregar listener para mensajes
     window.addEventListener('message', handleMessage);
-    
+
     // Limpiar listener al desmontar
     return () => {
       window.removeEventListener('message', handleMessage);
@@ -392,7 +392,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   const handlePrint = () => {
     const content = contractRef.current;
     const printWindow = window.open('', '_blank');
-    
+
     printWindow.document.write(`
       <html>
         <head>
@@ -410,7 +410,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               line-height: 1.5;
               color: #333;
               margin: 0;
-              padding: 40;
+              padding: 50;
               background-color: white;
               position: relative;
               font-size: 10pt;
@@ -470,18 +470,24 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               page-break-inside: avoid;
             }
             .section-title {
-              font-weight: 700;
-              margin-bottom: 8px;
-              color: #01549b;
-              font-size: 11pt;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #01549b;
+  font-size: 11pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+  .clauses-section .section-title {
+  margin-top: 150px; /* Increased to place clauses section further down */
+  padding-top: 25px;
+}
+
             p {
               margin-bottom: 8px;
               text-align: justify;
               font-size: 10pt;
             }
+             
             strong {
               font-weight: 600;
             }
@@ -716,7 +722,8 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               </div>
             </div>
 
-            <div class="section">
+            <div class="section clauses-section">
+            
               <div class="section-title">CLÁUSULAS</div>
               
               <div class="clauses">
@@ -789,7 +796,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
         </body>
       </html>
     `);
-    
+
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
@@ -812,8 +819,8 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   // Variantes de animación
   const formAnimation = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: {
         duration: 0.5,
@@ -825,8 +832,8 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
 
   const itemAnimation = {
     hidden: { opacity: 0, y: 10 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: { type: "spring", stiffness: 400, damping: 20 }
     }
@@ -834,7 +841,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
 
   // Renderizar formulario de edición
   const renderForm = () => (
-    <motion.div 
+    <motion.div
       className="space-y-8"
       initial="hidden"
       animate="visible"
@@ -857,7 +864,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="fecha" className="govuk-label">
               Fecha <span className="text-royal-red">*</span>
@@ -873,7 +880,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="hora" className="govuk-label">
               Hora <span className="text-royal-red">*</span>
@@ -891,7 +898,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           </motion.div>
         </div>
       </div>
-      
+
       <div className="govuk-form-section">
         <h3 className="govuk-form-section-title">Información del Comprador</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -909,7 +916,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="domicilioComprador" className="govuk-label">
               Domicilio <span className="text-royal-red">*</span>
@@ -924,7 +931,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="telefonoComprador" className="govuk-label">
               Teléfono <span className="text-royal-red">*</span>
@@ -939,7 +946,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="emailComprador" className="govuk-label">
               Correo Electrónico
@@ -953,7 +960,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               className="govuk-input"
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="identificacionComprador" className="govuk-label">
               Tipo de Identificación <span className="text-royal-red">*</span>
@@ -969,7 +976,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="numeroIdentificacion" className="govuk-label">
               Número de Identificación <span className="text-royal-red">*</span>
@@ -986,7 +993,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           </motion.div>
         </div>
       </div>
-      
+
       <div className="govuk-form-section">
         <h3 className="govuk-form-section-title">Información del Vehículo</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1004,7 +1011,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="modelo" className="govuk-label">
               Modelo <span className="text-royal-red">*</span>
@@ -1019,7 +1026,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="color" className="govuk-label">
               Color <span className="text-royal-red">*</span>
@@ -1034,7 +1041,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="tipo" className="govuk-label">
               Tipo <span className="text-royal-red">*</span>
@@ -1049,7 +1056,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="numeroMotor" className="govuk-label">
               Número de Motor <span className="text-royal-red">*</span>
@@ -1064,7 +1071,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="numeroSerie" className="govuk-label">
               Número de Serie <span className="text-royal-red">*</span>
@@ -1079,7 +1086,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="placas" className="govuk-label">
               Placas <span className="text-royal-red">*</span>
@@ -1094,7 +1101,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="numeroCirculacion" className="govuk-label">
               No. T. Circulación (Si aplica)
@@ -1108,7 +1115,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               className="govuk-input"
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="numeroFactura" className="govuk-label">
               No. Factura <span className="text-royal-red">*</span>
@@ -1123,7 +1130,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               required
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="refrendos" className="govuk-label">
               Refrendos
@@ -1137,7 +1144,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               className="govuk-input"
             />
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="rfcVehiculo" className="govuk-label">
               RFC (Si aplica)
@@ -1153,7 +1160,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           </motion.div>
         </div>
       </div>
-      
+
       <div className="govuk-form-section">
         <h3 className="govuk-form-section-title">Información de Pago</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1177,7 +1184,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               {formatCurrency(contractData.precioTotal)}
             </div>
           </motion.div>
-          
+
           <motion.div className="govuk-form-group" variants={itemAnimation}>
             <label htmlFor="formaPago" className="govuk-label">
               Forma de Pago <span className="text-royal-red">*</span>
@@ -1199,7 +1206,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           </motion.div>
         </div>
       </div>
-      
+
       <div className="govuk-form-section">
         <h3 className="govuk-form-section-title">Observaciones Adicionales</h3>
         <motion.div className="govuk-form-group" variants={itemAnimation}>
@@ -1213,7 +1220,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           ></textarea>
         </motion.div>
       </div>
-      
+
       <div className="flex justify-between">
         <button
           type="button"
@@ -1223,7 +1230,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           <IoDocumentOutline className="h-5 w-5 mr-2" />
           {showPreview ? 'Volver al Formulario' : 'Vista Previa'}
         </button>
-        
+
         {showPreview && (
           <div className="flex space-x-4">
             <button
@@ -1234,7 +1241,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
               <IoPrintOutline className="h-5 w-5 mr-2" />
               Imprimir
             </button>
-            
+
             <button
               type="button"
               onClick={handleSave}
@@ -1254,76 +1261,76 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     <div className="bg-white p-6 border border-gray-300 shadow-md">
       <div ref={contractRef} className="contract-preview prose max-w-none">
         <h1 className="text-center text-2xl font-bold text-blue-800 mb-6">Cliquéalo.mx</h1>
-        
+
         <p className="mb-4">
           En la ciudad de <strong>{contractData.ciudad}</strong> siendo el día <strong>{contractData.fecha}</strong> y la hora <strong>{contractData.hora}</strong>
         </p>
-        
+
         <p className="mb-4">
           Reunidos por una parte en calidad de <strong>EL VENDEDOR</strong> la sociedad mercantil <strong>COMERCIALIZADORA AUTOMOTRIZ CLIQUEALO DE MEXICO, SOCIEDAD DE RESPONSABILIDAD LIMITADA DE CAPITAL VARIABLE</strong>, con domicilio fiscal en <strong>SORGO 3923, COL. LA NOGALERA, GUADALAJARA, JALISCO, MÉXICO</strong>, <strong>C.P. 44470</strong> con RFC <strong>CAC240628RQ1</strong>, con número de teléfono 33 5009 1643 y correo electrónico <a href="mailto:contacto@cliquealo.mx">contacto@cliquealo.mx</a>, representada en este acto por <strong>RICARDO GARCIA RAMIREZ</strong>, quien está debidamente acreditado y facultado para ejecutar operaciones de compraventa, siendo el objeto social de la empresa la compraventa, comercialización, consignación y distribución de vehículos automotores seminuevos y usados, incluyendo automóviles, camionetas y camiones, manifestando bajo protesta de decir verdad que dichas facultades no le han sido revocadas ni modificadas en forma alguna.
         </p>
-        
+
         <p className="mb-4">
           <strong>y por otra parte el comprador</strong>
         </p>
-        
+
         <p className="mb-4">
           Nombre o razón social <strong>{contractData.nombreComprador}</strong>
         </p>
-        
+
         <p className="mb-4">
           y con domicilio en <strong>{contractData.domicilioComprador}</strong>
         </p>
-        
+
         <p className="mb-4">
           y con número de teléfono <strong>{contractData.telefonoComprador}</strong>
         </p>
-        
+
         <p className="mb-4">
           y correo electrónico <strong>{contractData.emailComprador}</strong>
         </p>
-        
+
         <p className="mb-4">
           <strong>Celebramos una carta responsiva, al tenor de las siguientes cláusulas:</strong>
         </p>
-        
+
         <p className="mb-4">
           <strong>1.- PRIMERA. EL VENDEDOR</strong> entrega en este acto al <strong>COMPRADOR</strong> los documentos correspondientes al automóvil que a continuación se describe.
         </p>
-        
+
         <div className="grid grid-cols-2 gap-4 my-6">
           <div>
-            <p><strong>MARCA</strong><br/>{contractData.marca}</p>
+            <p><strong>MARCA</strong><br />{contractData.marca}</p>
           </div>
           <div>
-            <p><strong>NO. DE MOTOR</strong><br/>{contractData.numeroMotor}</p>
+            <p><strong>NO. DE MOTOR</strong><br />{contractData.numeroMotor}</p>
           </div>
           <div>
-            <p><strong>COLOR</strong><br/>{contractData.color}</p>
+            <p><strong>COLOR</strong><br />{contractData.color}</p>
           </div>
           <div>
-            <p><strong>TIPO</strong><br/>{contractData.tipo}</p>
+            <p><strong>TIPO</strong><br />{contractData.tipo}</p>
           </div>
           <div>
-            <p><strong>NO. FACTURA</strong><br/>{contractData.numeroFactura}</p>
+            <p><strong>NO. FACTURA</strong><br />{contractData.numeroFactura}</p>
           </div>
           <div>
-            <p><strong>MODELO</strong><br/>{contractData.modelo}</p>
+            <p><strong>MODELO</strong><br />{contractData.modelo}</p>
           </div>
           <div>
-            <p><strong>NO. DE SERIE</strong><br/>{contractData.numeroSerie}</p>
+            <p><strong>NO. DE SERIE</strong><br />{contractData.numeroSerie}</p>
           </div>
           <div>
-            <p><strong>PLACAS</strong><br/>{contractData.placas}</p>
+            <p><strong>PLACAS</strong><br />{contractData.placas}</p>
           </div>
           <div>
-            <p><strong>NO. T. CIRCU. (SI APLICA)</strong><br/>{contractData.numeroCirculacion}</p>
+            <p><strong>NO. T. CIRCU. (SI APLICA)</strong><br />{contractData.numeroCirculacion}</p>
           </div>
           <div>
-            <p><strong>REFRENDOS</strong><br/>{contractData.refrendos}</p>
+            <p><strong>REFRENDOS</strong><br />{contractData.refrendos}</p>
           </div>
           <div>
-            <p><strong>RFC (si aplica)</strong><br/>{contractData.rfcVehiculo}</p>
+            <p><strong>RFC (si aplica)</strong><br />{contractData.rfcVehiculo}</p>
           </div>
           <div>
             <p>y que se identifica con <strong>{contractData.identificacionComprador}</strong></p>
@@ -1332,37 +1339,37 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
             <p>número de identificación <strong>{contractData.numeroIdentificacion}</strong></p>
           </div>
         </div>
-        
+
         <p className="mb-4">
           <strong>2.- SEGUNDA. EL COMPRADOR</strong> declara haber revisado física, mecánica y documentalmente el vehículo por cuenta propia y/o a través de su mecánico o perito de confianza presente durante la revisión física del vehículo, aceptándolo en las condiciones actuales de uso, por lo que reconoce que el vehículo se vende en el estado "tal como está" ("as is"), renunciando expresamente a cualquier reclamación posterior por defectos, vicios ocultos o fallas presentes o futuras. <strong>EL COMPRADOR</strong> reconoce que se le otorgó el tiempo suficiente para realizar la revisión exhaustiva del vehículo en el lugar de la compraventa con el personal técnico o peritos de su elección, manifestando su conformidad con el estado actual del vehículo en todos sus aspectos, por lo que no se aceptará ningún reclamo posterior a la firma del presente contrato.
         </p>
-        
+
         <p className="mb-4">
           <strong>3.- TERCERA. EL COMPRADOR</strong> paga al <strong>VENDEDOR</strong>, de común acuerdo, la cantidad total de {formatCurrency(contractData.precioTotal)} ({contractData.precioTotalTexto || 'cantidad con letra'}) por concepto del precio total del vehículo. El pago se realiza mediante {contractData.formaPago}, sirviendo el presente documento como el recibo más amplio que en derecho proceda por el pago total del vehículo. Las partes acuerdan que no existen pagos pendientes ni compromisos económicos adicionales entre ellas.
         </p>
-        
+
         <p className="mb-4">
           <strong>4.- CUARTA. El VENDEDOR</strong> declara bajo protesta de decir verdad que hasta la fecha y hora de firma del presente documento, el vehículo está libre de adeudos, multas, gravámenes y responsabilidades tanto civiles como penales o de tránsito. A partir del momento de la firma del presente documento y la entrega física del vehículo, <strong>EL COMPRADOR</strong> asume toda responsabilidad legal, civil, penal, administrativa, fiscal o de cualquier otra índole que se derive del uso, posesión y propiedad del vehículo, liberando al <strong>VENDEDOR</strong> de cualquier responsabilidad futura. <strong>El COMPRADOR</strong> será responsable incluso de aquellas infracciones o situaciones que, habiendo ocurrido después de la firma, llegaran a ser notificadas al <strong>VENDEDOR</strong>.
         </p>
-        
+
         <p className="mb-4">
           <strong>5.- QUINTA.</strong> En caso de disolución del presente contrato por causas imputables a cualquiera de las partes, la parte responsable deberá pagar como pena convencional el diez por ciento (10%) del valor total de la operación, independientemente de los daños y perjuicios que se pudieran ocasionar. Esta penalización deberá ser cubierta en un plazo no mayor a cinco días hábiles a partir de la notificación de disolución del contrato. Una vez cubierta dicha penalización, las partes renuncian a cualquier acción legal adicional.
         </p>
-        
+
         <p className="mb-4">
           <strong>6.- SEXTA.</strong> Para la interpretación, cumplimiento y ejecución del presente contrato, las partes expresamente acuerdan someterse a los siguientes procedimientos y jurisdicción:
         </p>
-        
+
         <ol className="list-decimal list-inside mb-4 pl-4">
           <li>Resolución amistosa mediante negociación directa y de buena fe como primera instancia.</li>
           <li>Mediación ante el Instituto de Justicia Alternativa con sede en <strong>Enrique Diaz de León Norte 316 Colonia Villaseñor , C.P. 44200, Guadalajara, Jalisco.</strong></li>
           <li>En última instancia, se someten expresamente a la jurisdicción de los Tribunales competentes de la ciudad de Guadalajara, Jalisco, renunciando a cualquier otro fuero que por razón de sus domicilios presentes o futuros pudiera corresponderles.</li>
         </ol>
-        
+
         <p className="mb-4">
           <strong>7.- SEPTIMA. DESLINDE DE RESPONSABILIDADES Y DECLARACIONES FINALES:</strong> Las partes manifiestan que:
         </p>
-        
+
         <ol className="list-decimal list-inside mb-6 pl-4">
           <li>Han leído y comprendido en su totalidad el presente documento.</li>
           <li>Las observaciones adicionales anotadas son las únicas existentes y válidas.</li>
@@ -1371,62 +1378,62 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           <li>Cualquier acuerdo no incluido en este documento se considera nulo.</li>
           <li>No se aceptarán reclamaciones posteriores sobre el estado del vehículo o documentación.</li>
         </ol>
-        
+
         {contractData.observaciones && (
           <div className="mb-6 border p-4 bg-gray-50">
             <p className="font-bold">OBSERVACIONES ADICIONALES:</p>
             <p>{contractData.observaciones}</p>
           </div>
         )}
-        
+
         <p className="mb-10">
           Leído que fue el presente contrato por las partes, y enteradas de su contenido, valor y alcance legal, manifestando su total conformidad con el mismo, lo firman por duplicado al margen izquierdo y al calce en cada una de sus hojas para constancia.
         </p>
-        
+
         <div className="flex justify-between mt-20 pt-10">
           <div className="w-5/12 text-center pt-2">
-          {signatures.vendor ? (
-            <div className="mb-4">
-              <img src={signatures.vendor} alt="Firma del vendedor" className="h-16 mx-auto mb-2" />
+            {signatures.vendor ? (
+              <div className="mb-4">
+                <img src={signatures.vendor} alt="Firma del vendedor" className="h-16 mx-auto mb-2" />
+                <button
+                  onClick={() => handleOpenSignatureWindow('vendor')}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Volver a firmar
+                </button>
+              </div>
+            ) : (
               <button
                 onClick={() => handleOpenSignatureWindow('vendor')}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mb-4"
               >
-                Volver a firmar
+                Firmar como vendedor
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => handleOpenSignatureWindow('vendor')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mb-4"
-            >
-              Firmar como vendedor
-            </button>
-          )}
+            )}
             <div className="border-t border-black pt-2">
               <p className="font-bold">COMERCIALIZADORA AUTOMOTRIZ CLIQUEALO DE MEXICO, SOCIEDAD DE RESPONSABILIDAD LIMITADA DE CAPITAL VARIABLE</p>
             </div>
           </div>
-          
+
           <div className="w-5/12 text-center pt-2">
-          {signatures.buyer ? (
-            <div className="mb-4">
-              <img src={signatures.buyer} alt="Firma del comprador" className="h-16 mx-auto mb-2" />
+            {signatures.buyer ? (
+              <div className="mb-4">
+                <img src={signatures.buyer} alt="Firma del comprador" className="h-16 mx-auto mb-2" />
+                <button
+                  onClick={() => handleOpenSignatureWindow('buyer')}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Volver a firmar
+                </button>
+              </div>
+            ) : (
               <button
                 onClick={() => handleOpenSignatureWindow('buyer')}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mb-4"
               >
-                Volver a firmar
+                Firmar como comprador
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => handleOpenSignatureWindow('buyer')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mb-4"
-            >
-              Firmar como comprador
-            </button>
-          )}
+            )}
             <div className="border-t border-black pt-2">
               <p className="font-bold">EL COMPRADOR</p>
               <p>{contractData.nombreComprador}</p>
@@ -1434,7 +1441,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           </div>
         </div>
       </div>
-      
+
       <div className="flex justify-between mt-8">
         <button
           type="button"
@@ -1444,7 +1451,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           <IoDocumentOutline className="h-5 w-5 mr-2" />
           Volver al Formulario
         </button>
-        
+
         <div className="flex space-x-4">
           <button
             type="button"
@@ -1454,7 +1461,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
             <IoPrintOutline className="h-5 w-5 mr-2" />
             Imprimir
           </button>
-          
+
           <button
             type="button"
             onClick={handleSave}
@@ -1477,37 +1484,37 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
             <h4 className="text-xl font-bold text-primary">
               {signatureType === 'vendor' ? 'Firma del Vendedor' : 'Firma del Comprador'}
             </h4>
-            <button 
+            <button
               onClick={handleCloseSignatureModal}
               className="text-gray-500 hover:text-gray-700"
             >
               ✕
             </button>
           </div>
-          
+
           <div className="signature-modal-body">
             <div className="canvas-container bg-white border border-gray-300 rounded-md">
-              <canvas 
+              <canvas
                 ref={signatureCanvasRef}
                 width={500}
                 height={200}
                 className="signature-canvas"
               />
             </div>
-            
+
             <div className="mt-3 mb-1 text-sm text-gray-500">
               Dibuje su firma dentro del recuadro
             </div>
           </div>
-          
+
           <div className="signature-modal-footer">
-            <button 
+            <button
               onClick={handleClearSignature}
               className="govuk-button govuk-button-secondary mr-3"
             >
               Limpiar
             </button>
-            <button 
+            <button
               onClick={handleSaveSignature}
               className="govuk-button"
             >
@@ -1526,14 +1533,14 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
       showIdCopyReminder();
     }
   };
-  
+
   // Efecto para añadir event listeners a los campos de identificación y domicilio
   useEffect(() => {
     // Referencias a los campos de formulario
     const idTypeField = document.getElementById('identificacionComprador');
     const idNumberField = document.getElementById('numeroIdentificacion');
     const addressField = document.getElementById('domicilioComprador');
-    
+
     // Funciones para los event listeners
     const handleIdTypeFieldFocus = () => {
       // Solo mostrar el modal si no se ha mostrado antes
@@ -1541,18 +1548,18 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
         showIdCopyReminder();
       }
     };
-    
+
     const handleAddressFieldBlur = () => {
       if (!contractData.domicilioComprador || contractData.domicilioComprador.trim() === '') {
         showAddressProofReminder();
       }
     };
-    
+
     // Añadir event listeners
     if (idTypeField) idTypeField.addEventListener('focus', handleIdTypeFieldFocus);
     if (idNumberField) idNumberField.addEventListener('focus', handleIdTypeFieldFocus);
     if (addressField) addressField.addEventListener('blur', handleAddressFieldBlur);
-    
+
     // Limpiar event listeners al desmontar
     return () => {
       if (idTypeField) idTypeField.removeEventListener('focus', handleIdTypeFieldFocus);
@@ -1564,7 +1571,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   return (
     <div className="contract-form">
       {showPreview ? renderContractPreview() : renderForm()}
-      
+
       {/* Modal para recordatorio de copia de ID */}
       <Modal
         isOpen={showIdCopyModal}
@@ -1583,7 +1590,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
             </p>
             <div className="max-h-60 overflow-y-auto mb-4 border rounded-md">
               {identificacionesComunes.map((identificacion, index) => (
-                <div 
+                <div
                   key={index}
                   className="p-3 border-b hover:bg-gray-50 cursor-pointer transition-colors"
                   onClick={() => handleSelectIdentification(identificacion)}
@@ -1606,7 +1613,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           </div>
         </div>
       </Modal>
-      
+
       {/* Modal para recordatorio de comprobante de domicilio */}
       <Modal
         isOpen={showAddressProofModal}
