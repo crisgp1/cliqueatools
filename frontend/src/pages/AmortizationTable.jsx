@@ -3,8 +3,12 @@ import { useReactToPrint } from 'react-to-print';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import logoCliquealo from '../assets/logo-cliquealo.png';
+import CreditEvolutionModal from './CreditEvolutionModal';
+import { IoBarChartOutline } from 'react-icons/io5';
 
 const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => {
+  // Estado para controlar el modal de evolución del crédito
+  const [showEvolutionModal, setShowEvolutionModal] = useState(false);
   const printComponentRef = useRef();
   
   // Estado para controlar el número de pagos visibles
@@ -259,7 +263,7 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
   };
   
   return (
-    <div className="govuk-form-section">
+      <div className="govuk-form-section">
       <div className="bg-royal-black p-4 text-white mb-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
           <div className="mb-4 sm:mb-0">
@@ -277,6 +281,13 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowEvolutionModal(true)}
+              className="govuk-button px-3 py-1.5 text-sm flex items-center bg-blue-600 hover:bg-blue-700"
+            >
+              <IoBarChartOutline className="h-4 w-4 mr-1" />
+              Ver Evolución del Crédito
+            </button>
             <button
               onClick={onBack}
               className="govuk-button-secondary px-3 py-1 text-sm flex items-center"
@@ -797,6 +808,20 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
           </div>
         </div>
       </div>
+      
+      {/* Modal con visualización dinámica de la evolución del crédito */}
+      <CreditEvolutionModal
+        isOpen={showEvolutionModal}
+        onClose={() => setShowEvolutionModal(false)}
+        amortizationData={amortizationData}
+        vehicleValue={creditConfig.financingAmount + creditConfig.downPaymentAmount}
+        financingAmount={creditConfig.financingAmount}
+        term={creditConfig.term}
+        rate={effectiveRate}
+        downPaymentAmount={creditConfig.downPaymentAmount}
+        cat={effectiveCat}
+        bankComision={bank.comision}
+      />
     </div>
   );
 };

@@ -1,134 +1,60 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
+import { IoCloseOutline } from 'react-icons/io5';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoClose } from 'react-icons/io5';
 
-const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
-  const modalRef = useRef();
-
-  // Configurar clases según el tamaño
-  const sizeClasses = {
-    sm: "max-w-md",
-    md: "max-w-2xl",
-    lg: "max-w-4xl",
-    xl: "max-w-6xl",
-    full: "max-w-full mx-4"
-  };
-  
-  const modalSize = sizeClasses[size] || sizeClasses.md;
-
-  // Cerrar modal al hacer clic fuera
+const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  // Prevenir scroll cuando el modal está abierto
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        onClose();
-      }
-    };
-
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      // Prevenir scroll en el body cuando el modal está abierto
       document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
       document.body.style.overflow = 'auto';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
-  // Cerrar modal con ESC
-  useEffect(() => {
-    const handleEsc = (event) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEsc);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEsc);
-    };
-  }, [isOpen, onClose]);
-
-  // Variantes de animación para el modal
-  const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 }
-  };
-
-  const modalVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 20,
-      scale: 0.95
-    },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      scale: 1,
-      transition: { 
-        type: "spring", 
-        damping: 25, 
-        stiffness: 300 
-      }
-    },
-    exit: { 
-      opacity: 0, 
-      y: 20,
-      scale: 0.95,
-      transition: { 
-        duration: 0.2 
-      }
-    }
+  // Determinar el tamaño del modal
+  const modalSize = {
+    sm: 'max-w-md',
+    md: 'max-w-2xl',
+    lg: 'max-w-4xl',
+    xl: 'max-w-6xl',
+    full: 'max-w-full mx-4'
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
-          initial="hidden"
-          animate="visible"
-          exit="hidden"
-          variants={backdropVariants}
-          transition={{ duration: 0.2 }}
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
         >
-          <motion.div 
-            ref={modalRef} 
-            className={`${modalSize} w-full bg-white rounded-none border-2 border-royal-black shadow-lg overflow-hidden`}
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+          <motion.div
+            className={`${modalSize[size]} w-full bg-white rounded-lg shadow-xl overflow-hidden`}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div 
-              className="flex items-center justify-between p-4 border-b-2 border-royal-black bg-royal-black text-white"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              <h3 className="text-xl font-bold">{title}</h3>
-              <motion.button 
-                onClick={onClose} 
-                className="p-1 hover:bg-royal-gray-700 rounded-full focus:outline-none focus:ring-2 focus:ring-white"
-                aria-label="Cerrar"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+              <button
+                onClick={onClose}
+                className="p-1 rounded-full hover:bg-gray-200 transition-colors"
               >
-                <IoClose className="h-6 w-6" />
-              </motion.button>
-            </motion.div>
-            <motion.div 
-              className="p-6 max-h-[calc(100vh-10rem)] overflow-y-auto"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
+                <IoCloseOutline className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[80vh]">
               {children}
-            </motion.div>
+            </div>
           </motion.div>
         </motion.div>
       )}

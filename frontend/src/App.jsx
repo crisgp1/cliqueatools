@@ -43,7 +43,9 @@ function App() {
     downPaymentAmount: 0,
     term: 36,
     selectedBankId: null,
-    financingAmount: 0
+    selectedBanks: [],
+    financingAmount: 0,
+    customizedBanks: {}
   })
   
   // Estado para resultados de crédito
@@ -51,6 +53,9 @@ function App() {
   
   // Estado para banco seleccionado
   const [selectedBank, setSelectedBank] = useState(null)
+  
+  // Estado para controlar si estamos en modo comparación
+  const [comparisonMode, setComparisonMode] = useState(false)
   
   // Estado para controlar la sección activa en el panel central
   const [activeSection, setActiveSection] = useState('home')
@@ -102,6 +107,13 @@ function App() {
   // Función para actualizar configuración del crédito
   const handleCreditConfigChange = (updatedConfig) => {
     setCreditConfig(updatedConfig)
+    
+    // Si hay bancos seleccionados para comparación, establecer modo comparación
+    if (updatedConfig.selectedBanks && updatedConfig.selectedBanks.length > 0) {
+      setComparisonMode(true)
+    } else {
+      setComparisonMode(false)
+    }
   }
   
   // Función para calcular resultados
@@ -208,12 +220,27 @@ function App() {
                 Tabla de Amortización
               </span>
             </h2>
-            {selectedBank && (
+              {selectedBank && (
               <AmortizationTable 
                 bank={selectedBank}
                 client={client}
                 vehicles={vehicles}
-                creditConfig={creditConfig}
+                creditConfig={
+                  // Si el banco tiene configuración personalizada, usarla
+                  selectedBank.hasCustomConfig && creditConfig.customizedBanks[selectedBank.id]
+                    ? {
+                        ...creditConfig,
+                        downPaymentPercentage: selectedBank.downPaymentPercentage,
+                        downPaymentAmount: selectedBank.downPaymentAmount,
+                        term: selectedBank.term,
+                        financingAmount: selectedBank.financingAmount,
+                        useCustomRate: selectedBank.tasa !== selectedBank.originalTasa,
+                        customRate: selectedBank.tasa,
+                        useCustomCat: selectedBank.cat !== selectedBank.originalCat,
+                        customCat: selectedBank.cat
+                      }
+                    : creditConfig
+                }
                 onBack={() => setActiveSection('results')}
               />
             )}
@@ -331,7 +358,11 @@ function App() {
                   
                   {creditResults.length > 0 && (
                     <div className="pt-3 border-t border-gray-300">
-                      <h4 className="text-sm font-medium text-gray-700">Mejor opción:</h4>
+                      <h4 className="text-sm font-medium text-gray-700">
+                        {comparisonMode && creditConfig.selectedBanks.length > 1 
+                          ? `Comparando ${creditConfig.selectedBanks.length} bancos` 
+                          : "Mejor opción:"}
+                      </h4>
                       <div className="mt-2 bg-white p-3 border-l-4 border-l-blue-700 shadow-md">
                         <div className="flex items-center mb-2">
                           {typeof creditResults[0].logo === 'string' && !creditResults[0].logo.includes('.') ? (
@@ -339,7 +370,12 @@ function App() {
                           ) : (
                             <img src={creditResults[0].logo} alt={creditResults[0].nombre} className="h-8 mr-2" />
                           )}
-                          <div className="font-medium">{creditResults[0].nombre}</div>
+                          <div className="font-medium">
+                            {creditResults[0].nombre}
+                            {creditResults[0].hasCustomConfig && (
+                              <span className="ml-2 text-xs text-green-600">(Personalizado)</span>
+                            )}
+                          </div>
                         </div>
                         <div className="text-sm space-y-1">
                           <div className="flex justify-between">
@@ -350,6 +386,14 @@ function App() {
                             <span className="text-gray-600">Tasa:</span>
                             <span>{creditResults[0].tasa.toFixed(2)}%</span>
                           </div>
+                          {comparisonMode && creditResults.length > 1 && (
+                            <div className="flex justify-between text-green-600">
+                              <span>Ahorro vs. peor opción:</span>
+                              <span className="font-medium">
+                                {formatCurrency((creditResults[creditResults.length - 1].monthlyPayment - creditResults[0].monthlyPayment) * creditResults[0].term)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={() => setActiveSection('results')}

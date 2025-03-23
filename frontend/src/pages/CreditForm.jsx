@@ -3,7 +3,12 @@ import { motion } from 'framer-motion';
 import { 
   IoPlayCircleOutline, 
   IoBusinessOutline,
-  IoWalletOutline
+  IoWalletOutline,
+  IoAddCircleOutline,
+  IoCheckmarkCircle,
+  IoTrashOutline,
+  IoInformationCircleOutline,
+  IoGitCompareOutline
 } from 'react-icons/io5';
 import bbvaLogo from '../assets/bbva.png';
 import banorteLogo from '../assets/banorte.png';
@@ -35,7 +40,12 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
   const [downPaymentPercentage, setDownPaymentPercentage] = useState("");
   const [downPaymentAmount, setDownPaymentAmount] = useState("");
   const [term, setTerm] = useState("");
+  // Estado para bancos seleccionados para comparación
+  const [selectedBanks, setSelectedBanks] = useState([]);
   const [selectedBankId, setSelectedBankId] = useState(null);
+  
+  // Estado para bancos con configuración personalizada
+  const [customizedBanks, setCustomizedBanks] = useState({});
   const [calculationPreview, setCalculationPreview] = useState(null);
   
   // Estado para tasa de interés y CAT personalizada
@@ -196,6 +206,45 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
     }
   }, [selectedBankId, downPaymentPercentage, term, vehiclesValue, useCustomRate, customRate]);
 
+  // Función para manejar la selección/deselección de bancos para comparación
+  const toggleBankSelection = (bankId) => {
+    if (selectedBanks.includes(bankId)) {
+      setSelectedBanks(selectedBanks.filter(id => id !== bankId));
+      
+      // Si el banco personalizado ya no está seleccionado, eliminar su configuración personalizada
+      if (customizedBanks[bankId]) {
+        const updatedCustomizations = {...customizedBanks};
+        delete updatedCustomizations[bankId];
+        setCustomizedBanks(updatedCustomizations);
+      }
+    } else {
+      // Limitar a máximo 5 bancos para comparación
+      if (selectedBanks.length < 5) {
+        setSelectedBanks([...selectedBanks, bankId]);
+      } else {
+        // Opcional: mostrar mensaje de que solo se pueden seleccionar 5 bancos
+        alert('Puedes seleccionar hasta 5 bancos para comparar.');
+      }
+    }
+  };
+  
+  // Guardar configuración personalizada para un banco específico
+  const saveCustomBankConfig = (bankId) => {
+    setCustomizedBanks({
+      ...customizedBanks,
+      [bankId]: {
+        downPaymentPercentage,
+        downPaymentAmount,
+        term,
+        financingAmount,
+        useCustomRate,
+        customRate,
+        useCustomCat,
+        customCat
+      }
+    });
+  };
+  
   // Notificar cambios en la configuración
   useEffect(() => {
     onCreditConfigChange({
@@ -203,33 +252,81 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
       downPaymentAmount,
       term,
       selectedBankId,
+      selectedBanks,
       financingAmount,
       useCustomRate,
       customRate,
       useCustomCat,
-      customCat
+      customCat,
+      customizedBanks
     });
-  }, [downPaymentPercentage, term, selectedBankId, downPaymentAmount, useCustomRate, customRate, useCustomCat, customCat, onCreditConfigChange]);
+  }, [
+    downPaymentPercentage, 
+    term, 
+    selectedBankId, 
+    selectedBanks,
+    downPaymentAmount, 
+    useCustomRate, 
+    customRate, 
+    useCustomCat, 
+    customCat, 
+    customizedBanks, 
+    onCreditConfigChange
+  ]);
 
-  // Calcular resultados para todos los bancos
+  // Calcular resultados para todos los bancos o solo los seleccionados
   const handleCalculate = () => {
-    const results = BANCOS.map(bank => {
-      // Usar tasa personalizada si está habilitada, de lo contrario usar la tasa del banco
-      const effectiveRate = useCustomRate ? customRate : bank.tasa;
+    // Si hay bancos seleccionados para comparación, usar solo esos
+    const banksToCalculate = selectedBanks.length > 0 
+      ? BANCOS.filter(bank => selectedBanks.includes(bank.id))
+      : BANCOS;
       
-      const payment = calculateMonthlyPayment(financingAmount, effectiveRate, term);
-      const totalAmount = payment * term;
-      const totalInterest = totalAmount - financingAmount;
-      const openingCommission = (financingAmount * bank.comision) / 100;
+    const results = banksToCalculate.map(bank => {
+      // Verificar si este banco tiene configuración personalizada
+      const bankConfig = customizedBanks[bank.id];
+      
+      // Usar configuración personalizada del banco específico o la configuración general
+      const configToUse = bankConfig || {
+        downPaymentPercentage,
+        downPaymentAmount,
+        term,
+        financingAmount,
+        useCustomRate,
+        customRate,
+        useCustomCat,
+        customCat
+      };
+      
+      // Determinar la tasa efectiva para este banco
+      const effectiveRate = configToUse.useCustomRate ? configToUse.customRate : bank.tasa;
+      
+      // Calcular los valores con la configuración apropiada
+      const payment = calculateMonthlyPayment(configToUse.financingAmount, effectiveRate, configToUse.term);
+      const totalAmount = payment * configToUse.term;
+      const totalInterest = totalAmount - configToUse.financingAmount;
+      const openingCommission = (configToUse.financingAmount * bank.comision) / 100;
+      
+      // Determinar el CAT a usar
+      const effectiveCat = configToUse.useCustomCat 
+        ? configToUse.customCat 
+        : configToUse.useCustomRate 
+          ? effectiveRate * 1.3 // Estimación aproximada
+          : bank.cat;
       
       return {
         ...bank,
         tasa: effectiveRate, // Usar la tasa efectiva
+        cat: effectiveCat, // Usar el CAT efectivo
         monthlyPayment: payment,
         totalAmount,
         totalInterest,
         openingCommission,
-        financingAmount
+        financingAmount: configToUse.financingAmount,
+        term: configToUse.term,
+        downPaymentAmount: configToUse.downPaymentAmount,
+        downPaymentPercentage: configToUse.downPaymentPercentage,
+        // Identificar si este banco tiene configuración personalizada
+        hasCustomConfig: !!bankConfig
       };
     }).sort((a, b) => a.monthlyPayment - b.monthlyPayment);
     
@@ -551,35 +648,179 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             </strong>
           </div>
         ) : (
-          <div className="govuk-form-group">
-            <label className="govuk-label mb-4">
-              Selecciona un banco para vista previa (opcional)
-            </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {BANCOS.map((bank) => (
-                <motion.button
-                  key={bank.id}
-                  type="button"
-                  onClick={() => setSelectedBankId(bank.id)}
-                  className={`p-4 border-2 ${
-                    selectedBankId === bank.id 
-                      ? 'border-royal-black bg-royal-gray-100' 
-                      : 'border-royal-gray-300 hover:border-royal-black/50'
-                  } flex flex-col items-center transition-all`}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  {React.isValidElement(bank.logo) ? (
-                    <div className="mb-2 text-royal-black">{bank.logo}</div>
-                  ) : (
-                    <img src={bank.logo} alt={bank.nombre} className="h-8 mb-2" />
-                  )}
-                  <span className="text-base font-bold">{bank.nombre}</span>
-                  <span className="text-sm">
-                    {useCustomRate ? formatPercentage(customRate) : formatPercentage(bank.tasa)}
-                  </span>
-                </motion.button>
-              ))}
+          <div className="govuk-form-group mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <label className="govuk-label mb-0">
+                Selecciona bancos para comparar
+              </label>
+              <div className="text-sm text-royal-gray-600">
+                <span className="inline-block px-2 py-1 bg-gray-100 rounded-full text-xs font-medium">
+                  {selectedBanks.length} seleccionados
+                </span>
+              </div>
+            </div>
+            
+            <div className="border-2 border-gray-300 rounded-md p-4 bg-gray-50 mb-4">
+              <div className="flex items-center text-sm text-royal-gray-600 mb-4">
+                <IoInformationCircleOutline className="h-5 w-5 mr-2 text-blue-600" />
+                <p>Selecciona hasta 5 bancos para comparar sus ofertas. Puedes personalizar la configuración del crédito para cada banco.</p>
+              </div>
+              
+              {selectedBanks.length > 0 && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
+                    <IoGitCompareOutline className="h-5 w-5 mr-1" />
+                    Bancos seleccionados para comparación
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedBanks.map(bankId => {
+                      const bank = BANCOS.find(b => b.id === bankId);
+                      const hasCustomConfig = !!customizedBanks[bankId];
+                      
+                      return (
+                        <div 
+                          key={`selected-${bankId}`} 
+                          className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${
+                            hasCustomConfig ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
+                          {bank.nombre}
+                          {hasCustomConfig && (
+                            <span className="ml-1 text-xs">(Personalizado)</span>
+                          )}
+                          <button 
+                            onClick={() => toggleBankSelection(bankId)}
+                            className="ml-1 text-gray-500 hover:text-gray-700"
+                          >
+                            <IoTrashOutline className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {BANCOS.map((bank) => {
+                const isSelected = selectedBankId === bank.id;
+                const isCompared = selectedBanks.includes(bank.id);
+                const hasCustomConfig = !!customizedBanks[bank.id];
+                
+                return (
+                  <motion.div
+                    key={bank.id}
+                    className={`p-4 border-2 ${
+                      isSelected 
+                        ? 'border-royal-black bg-royal-gray-100' 
+                        : isCompared
+                          ? hasCustomConfig 
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-blue-500 bg-blue-50'
+                          : 'border-royal-gray-300 hover:border-royal-black/50'
+                    } rounded transition-all`}
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="flex flex-col items-center">
+                      {React.isValidElement(bank.logo) ? (
+                        <div className="mb-2 text-royal-black">{bank.logo}</div>
+                      ) : (
+                        <img src={bank.logo} alt={bank.nombre} className="h-8 mb-2" />
+                      )}
+                      <span className="text-base font-bold">{bank.nombre}</span>
+                      <div className="mt-1 flex flex-wrap justify-center gap-1">
+                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full">
+                          {useCustomRate && hasCustomConfig 
+                            ? formatPercentage(customizedBanks[bank.id].customRate) 
+                            : useCustomRate 
+                              ? formatPercentage(customRate) 
+                              : formatPercentage(bank.tasa)
+                          }
+                        </span>
+                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full">
+                          CAT: {
+                            useCustomCat && hasCustomConfig 
+                              ? formatPercentage(customizedBanks[bank.id].customCat)
+                              : useCustomCat 
+                                ? formatPercentage(customCat)
+                                : useCustomRate && hasCustomConfig
+                                  ? `~${formatPercentage(customizedBanks[bank.id].customRate * 1.3)}`
+                                  : useCustomRate
+                                    ? `~${formatPercentage(customRate * 1.3)}`
+                                    : formatPercentage(bank.cat)
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-center mt-3 gap-2">
+                      <motion.button
+                        type="button"
+                        onClick={() => setSelectedBankId(bank.id)}
+                        className={`px-2 py-1 text-xs font-medium rounded ${
+                          isSelected 
+                            ? 'bg-royal-black text-white' 
+                            : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                        }`}
+                        whileTap={{ scale: 0.97 }}
+                      >
+                        {isSelected ? 'Seleccionado' : 'Vista previa'}
+                      </motion.button>
+                      
+                      <motion.button
+                        type="button"
+                        onClick={() => toggleBankSelection(bank.id)}
+                        className={`px-2 py-1 text-xs font-medium rounded flex items-center ${
+                          isCompared 
+                            ? 'bg-red-100 text-red-800 hover:bg-red-200' 
+                            : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                        }`}
+                        whileTap={{ scale: 0.97 }}
+                      >
+                        {isCompared ? (
+                          <>
+                            <IoTrashOutline className="h-3 w-3 mr-1" />
+                            Quitar
+                          </>
+                        ) : (
+                          <>
+                            <IoAddCircleOutline className="h-3 w-3 mr-1" />
+                            Comparar
+                          </>
+                        )}
+                      </motion.button>
+                    </div>
+                    
+                    {isCompared && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <motion.button
+                          type="button"
+                          onClick={() => saveCustomBankConfig(bank.id)}
+                          className={`w-full px-2 py-1 text-xs font-medium rounded flex items-center justify-center ${
+                            hasCustomConfig 
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                          }`}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          {hasCustomConfig ? (
+                            <>
+                              <IoCheckmarkCircle className="h-3 w-3 mr-1" />
+                              Configuración guardada
+                            </>
+                          ) : (
+                            <>
+                              <IoAddCircleOutline className="h-3 w-3 mr-1" />
+                              Guardar configuración actual
+                            </>
+                          )}
+                        </motion.button>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -733,17 +974,43 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
         </motion.div>
       )}
       
-      <div className="flex justify-end">
-        <motion.button
-          onClick={handleCalculate}
-          disabled={vehiclesValue <= 0}
-          className={`govuk-button flex items-center ${vehiclesValue <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <IoPlayCircleOutline className="h-5 w-5 mr-2" />
-          Calcular todas las opciones
-        </motion.button>
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <div>
+          {selectedBanks.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-sm p-4 bg-blue-50 border border-blue-200 rounded-md"
+            >
+              <p className="font-medium text-blue-800">
+                {selectedBanks.length} banco{selectedBanks.length !== 1 ? 's' : ''} seleccionado{selectedBanks.length !== 1 ? 's' : ''} para comparación
+              </p>
+            </motion.div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {selectedBanks.length > 0 && (
+              <motion.button
+                onClick={handleCalculate}
+                className="govuk-button-secondary flex items-center"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <IoGitCompareOutline className="h-5 w-5 mr-2" />
+                Comparar seleccionados
+              </motion.button>
+          )}
+          <motion.button
+            onClick={handleCalculate}
+            disabled={vehiclesValue <= 0}
+            className={`govuk-button flex items-center ${vehiclesValue <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <IoPlayCircleOutline className="h-5 w-5 mr-2" />
+            Calcular todas las opciones
+          </motion.button>
+        </div>
       </div>
     </motion.div>
   );
