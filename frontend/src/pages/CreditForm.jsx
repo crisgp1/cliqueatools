@@ -32,17 +32,17 @@ const BANCOS = [
 const PLAZOS = [12, 24, 36, 48, 60];
 const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults }) => {
   // Estado para los datos del formulario
-  const [downPaymentPercentage, setDownPaymentPercentage] = useState(20);
-  const [downPaymentAmount, setDownPaymentAmount] = useState(() => (vehiclesValue * 20) / 100);
-  const [term, setTerm] = useState(36);
+  const [downPaymentPercentage, setDownPaymentPercentage] = useState("");
+  const [downPaymentAmount, setDownPaymentAmount] = useState("");
+  const [term, setTerm] = useState("");
   const [selectedBankId, setSelectedBankId] = useState(null);
   const [calculationPreview, setCalculationPreview] = useState(null);
   
   // Estado para tasa de interés y CAT personalizada
   const [useCustomRate, setUseCustomRate] = useState(false);
-  const [customRate, setCustomRate] = useState(12.0);
+  const [customRate, setCustomRate] = useState("");
   const [useCustomCat, setUseCustomCat] = useState(false);
-  const [customCat, setCustomCat] = useState(15.6);
+  const [customCat, setCustomCat] = useState("");
   
   // Estado para controlar la actualización del enganche
   const [isUpdatingFromPercentage, setIsUpdatingFromPercentage] = useState(false);
@@ -142,10 +142,21 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
       maximumFractionDigits: 2
     }).format(value);
   };
+  
+  // Formatear número con separadores de miles y centavos
+  const formatNumber = (value) => {
+    return new Intl.NumberFormat('es-MX', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
 
   // Formatear porcentaje
   const formatPercentage = (value) => {
-    return `${value.toFixed(2)}%`;
+    if (value === "" || value === null || value === undefined || isNaN(value)) {
+      return "0.00%";
+    }
+    return `${Number(value).toFixed(2)}%`;
   };
 
   // Calcular pago mensual
@@ -278,22 +289,29 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
               <dt className="govuk-summary-list__key mr-2">Monto de enganche:</dt>
               <dd className="govuk-summary-list__value flex items-center">
                 <span className="mr-2">$</span>
-                <motion.input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="0"
-                  value={typeof downPaymentAmount === 'number' ? downPaymentAmount.toString() : downPaymentAmount}
-                  onChange={(e) => handleDownPaymentAmountChange(e.target.value)}
-                  onBlur={() => {
-                    // Si el campo está vacío al perder el foco, restaurar al valor calculado del porcentaje
-                    if (downPaymentAmount === '' || downPaymentAmount === null) {
-                      setDownPaymentAmount(Math.round((vehiclesValue * downPaymentPercentage) / 100));
-                    }
-                  }}
-                  className="w-32 h-8 border border-royal-gray-300 rounded text-center font-bold"
-                  whileTap={{ scale: 1.05 }}
-                />
+                <div className="flex flex-col">
+                  <motion.input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder=""
+                    value={typeof downPaymentAmount === 'number' ? downPaymentAmount.toString() : downPaymentAmount}
+                    onChange={(e) => handleDownPaymentAmountChange(e.target.value)}
+                    onBlur={() => {
+                      // Si el campo está vacío al perder el foco, restaurar al valor calculado del porcentaje
+                      if (downPaymentAmount === '' || downPaymentAmount === null) {
+                        setDownPaymentAmount(Math.round((vehiclesValue * downPaymentPercentage) / 100));
+                      }
+                    }}
+                    className="w-32 h-8 border border-royal-gray-300 rounded text-center font-bold"
+                    whileTap={{ scale: 1.05 }}
+                  />
+                  {typeof downPaymentAmount === 'number' && (
+                    <div className="text-xs text-royal-gray-600 mt-1 text-center w-32">
+                      {formatNumber(downPaymentAmount)}
+                    </div>
+                  )}
+                </div>
               </dd>
             </div>
           </div>
@@ -532,7 +550,9 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
               )}
               Vista previa con {calculationPreview.bank.nombre}
               {useCustomRate && (
-                <span className="ml-2 text-sm">(Tasa personalizada: {customRate.toFixed(2)}%)</span>
+                <span className="ml-2 text-sm">
+                  (Tasa personalizada: {(customRate === "" || isNaN(customRate)) ? "0.00" : Number(customRate).toFixed(2)}%)
+                </span>
               )}
             </div>
           </h3>
