@@ -39,7 +39,10 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
 
   // Formatear porcentaje
   const formatPercentage = (value) => {
-    return `${value.toFixed(2)}%`;
+    if (value === "" || value === null || value === undefined || isNaN(value)) {
+      return "0.00%";
+    }
+    return `${Number(value).toFixed(2)}%`;
   };
   
   // Formatear fecha
@@ -50,6 +53,16 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
   
   // Función para generar la tabla de amortización
   function generateAmortizationTable(amount, rate, months) {
+    // Asegúrarse de que los valores sean números válidos
+    amount = typeof amount === 'number' ? amount : 0;
+    rate = typeof rate === 'number' ? rate : 0;
+    months = typeof months === 'number' ? months : 0;
+    
+    // Si alguno de los valores esenciales es 0, devolver un array vacío
+    if (amount <= 0 || rate <= 0 || months <= 0) {
+      return [];
+    }
+    
     const monthlyRate = rate / 100 / 12;
     const monthlyPayment = calculateMonthlyPayment(amount, rate, months);
     
@@ -161,10 +174,16 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
       doc.setFontSize(12);
       doc.text('Resumen del Préstamo', 150, 60);
       doc.setFontSize(10);
-      doc.text(`Pago mensual: ${formatCurrency(amortizationData[0].payment)}`, 150, 65);
-      doc.text(`Total a pagar: ${formatCurrency(amortizationData[0].payment * creditConfig.term)}`, 150, 70);
+      doc.text(`Pago mensual: ${amortizationData.length > 0 
+        ? formatCurrency(amortizationData[0].payment) 
+        : formatCurrency(0)}`, 150, 65);
+      doc.text(`Total a pagar: ${amortizationData.length > 0 
+        ? formatCurrency(amortizationData[0].payment * creditConfig.term)
+        : formatCurrency(0)}`, 150, 70);
       doc.text(`Total de intereses: ${formatCurrency(
-        amortizationData.reduce((sum, row) => sum + row.interestPayment, 0)
+        amortizationData.length > 0
+          ? amortizationData.reduce((sum, row) => sum + row.interestPayment, 0)
+          : 0
       )}`, 150, 75);
       doc.text(`Comisión por apertura: ${formatCurrency((creditConfig.financingAmount * bank.comision) / 100)}`, 150, 80);
       
@@ -245,12 +264,17 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
           <div className="mb-4 sm:mb-0">
             <h2 className="text-xl font-bold">Tabla de Amortización</h2>
-            <p className="text-white text-sm">
-              Banco: {bank.nombre} | Plazo: {creditConfig.term} meses
-              {creditConfig.useCustomRate && (
-                <span className="ml-2">(Tasa personalizada: {formatPercentage(creditConfig.customRate)})</span>
-              )}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <p className="text-white text-sm">
+                Banco: {bank.nombre} | Plazo: {creditConfig.term} meses
+                {creditConfig.useCustomRate && (
+                  <span className="ml-2">(Tasa personalizada: {formatPercentage(creditConfig.customRate)})</span>
+                )}
+              </p>
+              <div className="inline-block bg-gray-700 text-white text-sm px-3 py-1 rounded-full">
+                Vehículo: {formatCurrency(creditConfig.financingAmount + creditConfig.downPaymentAmount)}
+              </div>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -304,6 +328,74 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
           </div>
         </div>
         
+        {/* Nuevo panel de resumen del vehículo */}
+        {vehicles && vehicles.length > 0 && (
+          <div className="mb-8 bg-gray-50 border-2 border-gray-300 rounded-md overflow-hidden">
+            <div className="bg-gray-700 text-white p-3">
+              <h3 className="font-bold text-lg">Vehículo Financiado</h3>
+              <div className="text-sm text-gray-200">Valor total: {formatCurrency(creditConfig.financingAmount + creditConfig.downPaymentAmount)}</div>
+            </div>
+            
+            <div className="p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Información del vehículo */}
+                <div className="space-y-2">
+                  {vehicles.map((vehicle) => (
+                    <div key={vehicle.id} className="border border-gray-200 p-3 rounded bg-white">
+                      <div className="font-bold text-gray-800">{vehicle.descripcion}</div>
+                      <div className="text-sm text-gray-600">{vehicle.marca} {vehicle.modelo} ({vehicle.año})</div>
+                      <div className="font-bold text-lg text-gray-800 mt-1">{formatCurrency(vehicle.valor)}</div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Distribución del financiamiento */}
+                <div className="border border-gray-200 p-3 rounded bg-white">
+                  <div className="font-medium mb-2">Distribución del Financiamiento</div>
+                  
+                  {/* Barra visual de enganche y financiamiento */}
+                  <div className="w-full h-10 rounded overflow-hidden border border-gray-300 flex mb-2">
+                    <div 
+                      className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 flex items-center justify-center text-white text-xs font-medium"
+                      style={{ width: `${(creditConfig.downPaymentAmount / (creditConfig.financingAmount + creditConfig.downPaymentAmount)) * 100}%` }}
+                    >
+                      Enganche
+                    </div>
+                    <div 
+                      className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 flex items-center justify-center text-white text-xs font-medium"
+                      style={{ width: `${(creditConfig.financingAmount / (creditConfig.financingAmount + creditConfig.downPaymentAmount)) * 100}%` }}
+                    >
+                      Financiado
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between text-sm mb-3">
+                    <div>
+                      <div className="text-xs text-indigo-600">Enganche</div>
+                      <div className="font-medium">{formatCurrency(creditConfig.downPaymentAmount)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-teal-600">Financiado</div>
+                      <div className="font-medium">{formatCurrency(creditConfig.financingAmount)}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 border-t border-gray-200 pt-2">
+                    <div className="flex justify-between">
+                      <span>Enganche (%)</span>
+                      <span>{((creditConfig.downPaymentAmount / (creditConfig.financingAmount + creditConfig.downPaymentAmount)) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span>Monto financiado (%)</span>
+                      <span>{((creditConfig.financingAmount / (creditConfig.financingAmount + creditConfig.downPaymentAmount)) * 100).toFixed(1)}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <div className="border-2 border-royal-black p-4">
             <h3 className="govuk-heading-s mb-2">Información del Cliente</h3>
@@ -361,22 +453,34 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
             </div>
           </div>
           
-          <div className="border-2 border-royal-black p-4 sm:col-span-2 lg:col-span-1">
+          <div className="border-2 border-royal-black p-4 sm:col-span-2 lg:col-span-1 bg-gray-50">
             <h3 className="govuk-heading-s mb-2">Resumen del Préstamo</h3>
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:justify-between">
                 <dt className="text-sm font-bold sm:w-1/2">Pago mensual:</dt>
-                <dd className="text-sm font-bold">{formatCurrency(amortizationData[0].payment)}</dd>
+                <dd className="text-sm font-bold">
+                  {amortizationData.length > 0 
+                    ? formatCurrency(amortizationData[0].payment) 
+                    : formatCurrency(0)}
+                </dd>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between">
                 <dt className="text-sm font-bold sm:w-1/2">Total a pagar:</dt>
-                <dd className="text-sm">{formatCurrency(amortizationData[0].payment * creditConfig.term)}</dd>
+                <dd className="text-sm">
+                  {amortizationData.length > 0 
+                    ? formatCurrency(amortizationData[0].payment * creditConfig.term)
+                    : formatCurrency(0)}
+                </dd>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between">
                 <dt className="text-sm font-bold sm:w-1/2">Total de intereses:</dt>
-                <dd className="text-sm">{formatCurrency(
-                  amortizationData.reduce((sum, row) => sum + row.interestPayment, 0)
-                )}</dd>
+                <dd className="text-sm">
+                  {formatCurrency(
+                    amortizationData.length > 0
+                      ? amortizationData.reduce((sum, row) => sum + row.interestPayment, 0)
+                      : 0
+                  )}
+                </dd>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between">
                 <dt className="text-sm font-bold sm:w-1/2">Comisión por apertura:</dt>
@@ -386,31 +490,267 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
           </div>
         </div>
         
-        {vehicles && vehicles.length > 0 && (
+
+        {amortizationData.length > 0 && (
           <div className="mb-8">
-            <h3 className="govuk-heading-s mb-4">Vehículos financiados</h3>
+            <h3 className="govuk-heading-s mb-4 flex justify-between items-center">
+              <span>Gráfica de Progresión</span>
+              <span className="text-sm bg-gray-700 text-white px-3 py-1 rounded-full">
+                {formatCurrency(creditConfig.financingAmount + creditConfig.downPaymentAmount)}
+              </span>
+            </h3>
             
-            {/* Mobile card view */}
-            <div className="sm:hidden space-y-4">
-              {vehicles.map((vehicle) => (
-                <div key={vehicle.id} className="border border-royal-gray-300 p-3">
-                  <div className="font-bold">{vehicle.descripcion}</div>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div>
-                      <div className="text-xs text-royal-gray-600">Marca/Modelo</div>
-                      <div>{vehicle.marca} {vehicle.modelo}</div>
+            {/* Visualización gráfica de la evolución del crédito */}
+            <div className="border-2 border-gray-300 rounded-md p-4 mb-6">
+              <h4 className="text-sm font-bold mb-2">Evolución del Financiamiento del Vehículo</h4>
+              
+              {/* Leyenda */}
+              <div className="flex flex-wrap gap-4 mb-4">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-gradient-to-r from-indigo-600 to-blue-500 mr-1 rounded-sm"></div>
+                  <span className="text-xs">Capital pagado</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-gradient-to-r from-orange-400 to-red-500 mr-1 rounded-sm"></div>
+                  <span className="text-xs">Intereses pagados</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-gradient-to-r from-gray-300 to-gray-400 mr-1 rounded-sm"></div>
+                  <span className="text-xs">Saldo pendiente</span>
+                </div>
+              </div>
+              
+              {/* Barra inicial (saldo total) */}
+              <div className="mb-1 text-xs font-medium">
+                Inicio: {formatCurrency(creditConfig.financingAmount)}
+              </div>
+              <div className="w-full h-8 bg-gradient-to-r from-gray-300 to-gray-400 rounded-sm mb-4"></div>
+              
+              {/* Barras intermedias (cada 25% del plazo) */}
+              {[0.25, 0.5, 0.75].map((fraction) => {
+                const paymentIndex = Math.floor(creditConfig.term * fraction) - 1;
+                if (paymentIndex < 0 || paymentIndex >= amortizationData.length) return null;
+                
+                const row = amortizationData[paymentIndex];
+                const totalPaid = creditConfig.financingAmount - row.balance;
+                const totalInterestPaid = amortizationData.slice(0, paymentIndex + 1)
+                  .reduce((sum, r) => sum + r.interestPayment, 0);
+                const totalPrincipalPaid = totalPaid - totalInterestPaid;
+                
+                const principalPaidWidth = `${(totalPrincipalPaid / creditConfig.financingAmount) * 100}%`;
+                const interestPaidWidth = `${(totalInterestPaid / creditConfig.financingAmount) * 100}%`;
+                const balanceWidth = `${(row.balance / creditConfig.financingAmount) * 100}%`;
+                
+                return (
+                  <div key={`payment-${row.paymentNumber}`} className="mb-4">
+                    <div className="mb-1 text-xs font-medium">
+                      Pago #{row.paymentNumber} ({formatDate(row.paymentDate)}): {formatCurrency(row.balance)} pendiente
                     </div>
-                    <div>
-                      <div className="text-xs text-royal-gray-600">Año</div>
-                      <div>{vehicle.año}</div>
+                    <div className="w-full h-8 flex rounded-sm overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 flex items-center justify-center"
+                        style={{ width: principalPaidWidth }}
+                      >
+                        {parseFloat(principalPaidWidth) > 15 && (
+                          <span className="text-xs text-white px-1">Capital</span>
+                        )}
+                      </div>
+                      <div 
+                        className="h-full bg-gradient-to-r from-orange-400 to-red-500 flex items-center justify-center"
+                        style={{ width: interestPaidWidth }}
+                      >
+                        {parseFloat(interestPaidWidth) > 15 && (
+                          <span className="text-xs text-white px-1">Interés</span>
+                        )}
+                      </div>
+                      <div 
+                        className="h-full bg-gradient-to-r from-gray-300 to-gray-400 flex items-center justify-center"
+                        style={{ width: balanceWidth }}
+                      >
+                        {parseFloat(balanceWidth) > 15 && (
+                          <span className="text-xs text-gray-800 px-1">Saldo</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="col-span-2">
-                      <div className="text-xs text-royal-gray-600">Valor</div>
-                      <div className="font-bold">{formatCurrency(vehicle.valor)}</div>
+                  </div>
+                );
+              })}
+              
+              {/* Barra final (último pago) */}
+              {amortizationData.length > 0 && (
+                <div>
+                  <div className="mb-1 text-xs font-medium">
+                    Al finalizar (Pago #{creditConfig.term}): {formatCurrency(0)} pendiente
+                  </div>
+                  <div className="w-full h-8 flex rounded-sm overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 flex items-center justify-center"
+                      style={{ 
+                        width: `${(creditConfig.financingAmount - amortizationData.reduce((sum, row) => sum + row.interestPayment, 0)) / creditConfig.financingAmount * 100}%`
+                      }}
+                    >
+                      <span className="text-xs text-white px-1">Capital</span>
+                    </div>
+                    <div 
+                      className="h-full bg-gradient-to-r from-orange-400 to-red-500 flex items-center justify-center"
+                      style={{ 
+                        width: `${amortizationData.reduce((sum, row) => sum + row.interestPayment, 0) / creditConfig.financingAmount * 100}%`
+                      }}
+                    >
+                      <span className="text-xs text-white px-1">Interés Total</span>
                     </div>
                   </div>
                 </div>
-              ))}
+              )}
+            </div>
+            
+            {/* Distribución de pagos */}
+            <div className="border-2 border-gray-300 rounded-md p-4">
+              <h4 className="text-sm font-bold mb-2">Distribución del Pago Mensual: {formatCurrency(amortizationData[0].payment)}</h4>
+              
+              {/* Gráfica circular que muestra la distribución del primer pago */}
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                {/* Visualización gráfica */}
+                <div className="w-full md:w-2/3">
+                  <div className="w-full h-12 flex rounded-sm overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 flex items-center justify-center text-white"
+                      style={{ 
+                        width: `${(amortizationData[0].principalPayment / amortizationData[0].payment) * 100}%`
+                      }}
+                    >
+                      <span className="text-xs md:text-sm">Capital</span>
+                    </div>
+                    <div 
+                      className="h-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-white"
+                      style={{ 
+                        width: `${(amortizationData[0].interestPayment / amortizationData[0].payment) * 100}%`
+                      }}
+                    >
+                      <span className="text-xs md:text-sm">Interés</span>
+                    </div>
+                  </div>
+                  
+                  {/* Etiquetas de porcentaje */}
+                  <div className="flex justify-between text-xs text-gray-600 mt-1">
+                    <span>
+                      {((amortizationData[0].principalPayment / amortizationData[0].payment) * 100).toFixed(1)}% a capital
+                    </span>
+                    <span>
+                      {((amortizationData[0].interestPayment / amortizationData[0].payment) * 100).toFixed(1)}% a interés
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Valores numéricos */}
+                <div className="w-full md:w-1/3 flex flex-col gap-2">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-teal-600 font-medium">Capital:</span>
+                    <span className="text-xs font-bold">{formatCurrency(amortizationData[0].principalPayment)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-xs text-amber-600 font-medium">Interés:</span>
+                    <span className="text-xs font-bold">{formatCurrency(amortizationData[0].interestPayment)}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-gray-200">
+                    <span className="text-xs font-medium">Total:</span>
+                    <span className="text-xs font-bold">{formatCurrency(amortizationData[0].payment)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Explicación de la evolución */}
+              <div className="mt-4 text-xs text-gray-600">
+                <p>A medida que avanza el crédito, la proporción de capital aumenta y la de interés disminuye en cada pago mensual.</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <h3 className="govuk-heading-s mb-4">Tabla de Amortización</h3>
+        
+        {amortizationData.length === 0 ? (
+          <div className="text-center py-6 border-2 border-dashed border-royal-gray-300">
+            <p className="text-royal-gray-600">
+              Ingrese valores válidos en el formulario de crédito para generar la tabla de amortización.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile card view */}
+            <div className="sm:hidden">
+              <div className="flex space-x-2 mb-4">
+                <button 
+                  className="px-3 py-1 text-xs bg-royal-gray-100 border border-royal-gray-300 rounded"
+                  onClick={() => setVisiblePayments(12)}
+                >
+                  12 meses
+                </button>
+                <button 
+                  className="px-3 py-1 text-xs bg-royal-gray-100 border border-royal-gray-300 rounded"
+                  onClick={() => setVisiblePayments(24)}
+                >
+                  24 meses
+                </button>
+                <select 
+                  id="mobilePageSize" 
+                  className="px-2 py-1 text-xs bg-white border border-royal-gray-300 rounded"
+                  value={visiblePayments}
+                  onChange={(e) => setVisiblePayments(Number(e.target.value))}
+                >
+                  {[6, 12, 24, creditConfig.term].map(size => (
+                    <option key={size} value={size}>{size} pagos</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="space-y-3">
+                {amortizationData.slice(0, visiblePayments).map((row) => (
+                  <details 
+                    key={row.paymentNumber} 
+                    className="border border-royal-gray-300"
+                  >
+                    <summary className="flex justify-between items-center p-3 cursor-pointer">
+                      <div className="font-medium">Pago #{row.paymentNumber}</div>
+                      <div className="font-bold">{formatCurrency(row.payment)}</div>
+                    </summary>
+                    <div className="p-3 border-t border-royal-gray-300 bg-royal-gray-50">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <div className="text-xs text-royal-gray-600">Fecha</div>
+                          <div>{formatDate(row.paymentDate)}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-royal-gray-600">Capital</div>
+                          <div>{formatCurrency(row.principalPayment)}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-royal-gray-600">Interés</div>
+                          <div>{formatCurrency(row.interestPayment)}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-royal-gray-600">Saldo</div>
+                          <div>{formatCurrency(row.balance)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </details>
+                ))}
+              </div>
+              
+              {visiblePayments < amortizationData.length && (
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-royal-gray-600">
+                    Mostrando {visiblePayments} de {amortizationData.length} pagos
+                  </p>
+                  <button 
+                    className="mt-2 px-4 py-2 text-sm bg-royal-gray-100 border border-royal-gray-300 rounded"
+                    onClick={() => setVisiblePayments(amortizationData.length)}
+                  >
+                    Ver todos los pagos
+                  </button>
+                </div>
+              )}
             </div>
             
             {/* Desktop table view */}
@@ -418,132 +758,30 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
               <table className="govuk-table">
                 <thead>
                   <tr>
-                    <th scope="col" className="govuk-table__header">Descripción</th>
-                    <th scope="col" className="govuk-table__header">Marca/Modelo</th>
-                    <th scope="col" className="govuk-table__header">Año</th>
-                    <th scope="col" className="govuk-table__header">Valor</th>
+                    <th scope="col" className="govuk-table__header">No. Pago</th>
+                    <th scope="col" className="govuk-table__header">Fecha</th>
+                    <th scope="col" className="govuk-table__header">Pago</th>
+                    <th scope="col" className="govuk-table__header">Capital</th>
+                    <th scope="col" className="govuk-table__header">Interés</th>
+                    <th scope="col" className="govuk-table__header">Saldo</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {vehicles.map((vehicle) => (
-                    <tr key={vehicle.id} className="govuk-table__row">
-                      <td className="govuk-table__cell">{vehicle.descripcion}</td>
-                      <td className="govuk-table__cell">{vehicle.marca} {vehicle.modelo}</td>
-                      <td className="govuk-table__cell">{vehicle.año}</td>
-                      <td className="govuk-table__cell">{formatCurrency(vehicle.valor)}</td>
+                  {amortizationData.map((row) => (
+                    <tr key={row.paymentNumber} className="govuk-table__row">
+                      <td className="govuk-table__cell">{row.paymentNumber}</td>
+                      <td className="govuk-table__cell">{formatDate(row.paymentDate)}</td>
+                      <td className="govuk-table__cell">{formatCurrency(row.payment)}</td>
+                      <td className="govuk-table__cell">{formatCurrency(row.principalPayment)}</td>
+                      <td className="govuk-table__cell">{formatCurrency(row.interestPayment)}</td>
+                      <td className="govuk-table__cell">{formatCurrency(row.balance)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          </>
         )}
-        
-        <h3 className="govuk-heading-s mb-4">Tabla de Amortización</h3>
-        
-        {/* Mobile card view */}
-        <div className="sm:hidden">
-          <div className="flex space-x-2 mb-4">
-            <button 
-              className="px-3 py-1 text-xs bg-royal-gray-100 border border-royal-gray-300 rounded"
-              onClick={() => setVisiblePayments(12)}
-            >
-              12 meses
-            </button>
-            <button 
-              className="px-3 py-1 text-xs bg-royal-gray-100 border border-royal-gray-300 rounded"
-              onClick={() => setVisiblePayments(24)}
-            >
-              24 meses
-            </button>
-            <select 
-              id="mobilePageSize" 
-              className="px-2 py-1 text-xs bg-white border border-royal-gray-300 rounded"
-              value={visiblePayments}
-              onChange={(e) => setVisiblePayments(Number(e.target.value))}
-            >
-              {[6, 12, 24, creditConfig.term].map(size => (
-                <option key={size} value={size}>{size} pagos</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="space-y-3">
-            {amortizationData.slice(0, visiblePayments).map((row) => (
-              <details 
-                key={row.paymentNumber} 
-                className="border border-royal-gray-300"
-              >
-                <summary className="flex justify-between items-center p-3 cursor-pointer">
-                  <div className="font-medium">Pago #{row.paymentNumber}</div>
-                  <div className="font-bold">{formatCurrency(row.payment)}</div>
-                </summary>
-                <div className="p-3 border-t border-royal-gray-300 bg-royal-gray-50">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <div className="text-xs text-royal-gray-600">Fecha</div>
-                      <div>{formatDate(row.paymentDate)}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-royal-gray-600">Capital</div>
-                      <div>{formatCurrency(row.principalPayment)}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-royal-gray-600">Interés</div>
-                      <div>{formatCurrency(row.interestPayment)}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-royal-gray-600">Saldo</div>
-                      <div>{formatCurrency(row.balance)}</div>
-                    </div>
-                  </div>
-                </div>
-              </details>
-            ))}
-          </div>
-          
-          {visiblePayments < amortizationData.length && (
-            <div className="mt-4 text-center">
-              <p className="text-sm text-royal-gray-600">
-                Mostrando {visiblePayments} de {amortizationData.length} pagos
-              </p>
-              <button 
-                className="mt-2 px-4 py-2 text-sm bg-royal-gray-100 border border-royal-gray-300 rounded"
-                onClick={() => setVisiblePayments(amortizationData.length)}
-              >
-                Ver todos los pagos
-              </button>
-            </div>
-          )}
-        </div>
-        
-        {/* Desktop table view */}
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="govuk-table">
-            <thead>
-              <tr>
-                <th scope="col" className="govuk-table__header">No. Pago</th>
-                <th scope="col" className="govuk-table__header">Fecha</th>
-                <th scope="col" className="govuk-table__header">Pago</th>
-                <th scope="col" className="govuk-table__header">Capital</th>
-                <th scope="col" className="govuk-table__header">Interés</th>
-                <th scope="col" className="govuk-table__header">Saldo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {amortizationData.map((row) => (
-                <tr key={row.paymentNumber} className="govuk-table__row">
-                  <td className="govuk-table__cell">{row.paymentNumber}</td>
-                  <td className="govuk-table__cell">{formatDate(row.paymentDate)}</td>
-                  <td className="govuk-table__cell">{formatCurrency(row.payment)}</td>
-                  <td className="govuk-table__cell">{formatCurrency(row.principalPayment)}</td>
-                  <td className="govuk-table__cell">{formatCurrency(row.interestPayment)}</td>
-                  <td className="govuk-table__cell">{formatCurrency(row.balance)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
         
         {/* Pie de página para impresión - visible solo al imprimir */}
         <div className="hidden print:block print:mt-8">

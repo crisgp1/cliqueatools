@@ -250,11 +250,11 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
         <h3 className="govuk-form-section-title">Configuración del crédito</h3>
         
         <div className="govuk-form-group">
-          <label htmlFor="downPayment" className="govuk-label">
-            Enganche (%)
+          <label className="govuk-label">
+            Distribución del financiamiento
           </label>
           <div className="flex justify-between mb-1">
-            <span className="govuk-form-hint">Seleccione el porcentaje de enganche</span>
+            <span className="govuk-form-hint">Ajuste el porcentaje de enganche (10% - 60%)</span>
             <div className="flex items-center">
               <motion.input
                 type="number"
@@ -269,20 +269,75 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
               <span className="font-bold">%</span>
             </div>
           </div>
-          <motion.input
-            type="range"
-            id="downPayment"
-            min="10"
-            max="60"
-            step="1"
-            value={downPaymentPercentage}
-            onChange={(e) => handleDownPaymentPercentageChange(e.target.value)}
-            className="govuk-slider"
-            whileTap={{ scale: 1.05 }}
-          />
-          <div className="flex justify-between text-sm text-royal-gray-600 mt-1">
-            <span>10%</span>
-            <span>60%</span>
+          
+          {/* Panel informativo del vehículo */}
+          <div className="mt-3 mb-4 bg-gray-50 border-2 border-gray-300 rounded-md p-4">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-base font-bold text-gray-800">Vehículo cotizado</h4>
+              <div className="px-3 py-1 bg-gray-700 text-white rounded-full text-sm">
+                {formatCurrency(vehiclesValue)}
+              </div>
+            </div>
+
+            {/* Barra visual horizontal de enganche y financiamiento */}
+            <div className="w-full h-14 rounded-md flex overflow-hidden border-2 border-gray-300">
+              {/* Barra de enganche */}
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 flex items-center justify-center text-white font-medium border-r-2 border-white"
+                style={{ width: `${downPaymentPercentage}%` }}
+              >
+                {downPaymentPercentage >= 15 && (
+                  <span className="text-xs md:text-sm">Enganche {downPaymentPercentage}%</span>
+                )}
+              </div>
+              
+              {/* Barra de monto a financiar */}
+              <div 
+                className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 flex items-center justify-center text-white font-medium"
+                style={{ width: `${100 - downPaymentPercentage}%` }}
+              >
+                {(100 - downPaymentPercentage) >= 15 && (
+                  <span className="text-xs md:text-sm">A financiar {100 - downPaymentPercentage}%</span>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-between text-sm text-royal-gray-600 mt-2">
+              <div className="flex flex-col">
+                <span className="font-medium text-indigo-600">Enganche</span>
+                <span>{formatCurrency(downPaymentAmount)}</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="font-medium text-teal-600">Monto a financiar</span>
+                <span>{formatCurrency(financingAmount)}</span>
+              </div>
+            </div>
+
+            {/* Progresión del valor */}
+            <div className="mt-4 border-t border-gray-300 pt-3">
+              <div className="flex justify-between mb-1">
+                <span className="text-sm font-medium">Distribución del valor</span>
+                <span className="text-sm font-bold">{formatCurrency(vehiclesValue)}</span>
+              </div>
+              <div className="w-full h-8 bg-gray-200 rounded-md overflow-hidden flex">
+                <div 
+                  className="h-full bg-indigo-600 flex items-center justify-center text-xs text-white"
+                  style={{ width: `${(downPaymentAmount / vehiclesValue) * 100}%` }}
+                >
+                  {((downPaymentAmount / vehiclesValue) * 100).toFixed(1)}%
+                </div>
+                <div 
+                  className="h-full bg-teal-500 flex items-center justify-center text-xs text-white"
+                  style={{ width: `${(financingAmount / vehiclesValue) * 100}%` }}
+                >
+                  {((financingAmount / vehiclesValue) * 100).toFixed(1)}%
+                </div>
+              </div>
+              <div className="flex justify-between text-xs text-gray-600 mt-1">
+                <span>Pago inicial: {formatCurrency(downPaymentAmount)}</span>
+                <span>A financiar: {formatCurrency(financingAmount)}</span>
+              </div>
+            </div>
           </div>
           <div className="govuk-summary-list mt-3">
             <div className="govuk-summary-list__row flex items-center justify-between">
@@ -397,21 +452,19 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                   <span className="font-bold">%</span>
                 </div>
               </div>
-              <motion.input
-                type="range"
-                id="customRate"
-                min="5"
-                max="25"
-                step="0.1"
-                value={customRate}
-                onChange={(e) => setCustomRate(Number(e.target.value))}
-                className="govuk-slider"
-                whileTap={{ scale: 1.05 }}
-              />
-              <div className="flex justify-between text-sm text-royal-gray-600 mt-1">
-                <span>5%</span>
-                <span>25%</span>
-              </div>
+                  {/* Barra visual horizontal de tasa de interés */}
+                  <div className="w-full h-8 rounded-md bg-gray-100 relative my-3 border-2 border-gray-300">
+                    <div 
+                      className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-l-sm flex items-center justify-center text-white text-xs font-medium"
+                      style={{ width: `${(customRate / 25) * 100}%` }}
+                    >
+                      {customRate}%
+                    </div>
+                    <div className="flex justify-between text-xs text-royal-gray-600 mt-1">
+                      <span>5%</span>
+                      <span>25%</span>
+                    </div>
+                  </div>
 
               {/* CAT personalizado */}
               <div className="mt-6">
@@ -471,20 +524,18 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                       <span className="font-bold">%</span>
                     </div>
                   </div>
-                  <motion.input
-                    type="range"
-                    id="customCat"
-                    min="6"
-                    max="30"
-                    step="0.1"
-                    value={customCat}
-                    onChange={(e) => setCustomCat(Number(e.target.value))}
-                    className="govuk-slider"
-                    whileTap={{ scale: 1.05 }}
-                  />
-                  <div className="flex justify-between text-sm text-royal-gray-600 mt-1">
-                    <span>6%</span>
-                    <span>30%</span>
+                  {/* Barra visual horizontal de CAT */}
+                  <div className="w-full h-8 rounded-md bg-gray-100 relative my-3 border-2 border-gray-300">
+                    <div 
+                      className="h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-l-sm flex items-center justify-center text-white text-xs font-medium"
+                      style={{ width: `${(customCat / 30) * 100}%` }}
+                    >
+                      {customCat}%
+                    </div>
+                    <div className="flex justify-between text-xs text-royal-gray-600 mt-1">
+                      <span>6%</span>
+                      <span>30%</span>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -541,6 +592,78 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
           initial="hidden"
           animate="visible"
         >
+          {/* Gráfica progresiva de valor del vehículo vs valor total pagado */}
+          <div className="mb-6 border-2 border-gray-300 rounded-md p-4 bg-gray-50">
+            <h4 className="govuk-form-section-subtitle mb-3 flex justify-between">
+              <span>Comparativa de costos del vehículo</span>
+              <span className="text-sm font-bold bg-gray-700 text-white px-3 py-1 rounded-full">
+                {formatCurrency(vehiclesValue)}
+              </span>
+            </h4>
+            
+            <div className="flex flex-col space-y-6">
+              {/* Comparación del valor del vehículo vs costo total */}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Costo total vs. Valor del vehículo</span>
+                  <span className="text-sm font-medium text-indigo-600">
+                    +{((calculationPreview.totalAmount - vehiclesValue) / vehiclesValue * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="w-full flex flex-col space-y-3 relative">
+                  {/* Valor del vehículo */}
+                  <div>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>Valor del vehículo</span>
+                      <span className="font-medium">{formatCurrency(vehiclesValue)}</span>
+                    </div>
+                    <div className="h-8 w-full bg-gradient-to-r from-gray-200 to-gray-400 rounded-sm flex items-center px-2">
+                      <span className="text-xs font-medium text-gray-800">100%</span>
+                    </div>
+                  </div>
+                  
+                  {/* Valor total a pagar (incluye intereses) */}
+                  <div>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>Total a pagar (con intereses)</span>
+                      <span className="font-medium">{formatCurrency(calculationPreview.totalAmount)}</span>
+                    </div>
+                    <div className="h-8 w-full flex">
+                      <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-l-sm flex items-center px-2"
+                          style={{ width: `${(vehiclesValue / calculationPreview.totalAmount) * 100}%` }}>
+                        <span className="text-xs font-medium text-white">Vehículo</span>
+                      </div>
+                      <div className="h-full bg-gradient-to-r from-purple-500 to-purple-700 rounded-r-sm flex items-center px-2"
+                          style={{ width: `${((calculationPreview.totalAmount - vehiclesValue) / calculationPreview.totalAmount) * 100}%` }}>
+                        <span className="text-xs font-medium text-white">
+                          Intereses y comisiones
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Desglose detallado */}
+              <div className="border-t border-gray-300 pt-3">
+                <div className="text-sm font-medium mb-2">Desglose de pagos</div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-blue-100 p-2 rounded">
+                    <div className="text-xs text-blue-800">Valor del vehículo</div>
+                    <div className="font-bold text-blue-600">{formatCurrency(vehiclesValue)}</div>
+                  </div>
+                  <div className="bg-purple-100 p-2 rounded">
+                    <div className="text-xs text-purple-800">Intereses</div>
+                    <div className="font-bold text-purple-600">{formatCurrency(calculationPreview.totalInterest)}</div>
+                  </div>
+                  <div className="bg-amber-100 p-2 rounded">
+                    <div className="text-xs text-amber-800">Comisión</div>
+                    <div className="font-bold text-amber-600">{formatCurrency(calculationPreview.openingCommission)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <h3 className="govuk-form-section-title">
             <div className="flex items-center">
               {React.isValidElement(calculationPreview.bank.logo) ? (
