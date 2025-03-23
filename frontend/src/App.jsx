@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import VehicleForm from './pages/VehicleForm'
 import ClientForm from './pages/ClientForm'
+import Login from './pages/Login'
+import CreateAccount from './pages/CreateAccount'
+import { AuthProvider, AuthContext } from './context/AuthContext'
 import logoImg from './assets/logo.png'
 import logoImgDark from './assets/logo-dark.png'
 import CreditForm from './pages/CreditForm'
@@ -21,7 +24,10 @@ import {
   IoDocumentTextOutline
 } from 'react-icons/io5'
 
-function App() {
+// Componente principal
+const MainApp = () => {
+  // Obtener estado y funciones de autenticación
+  const { user, logout } = useContext(AuthContext);
   // Estado para gestionar vehículos
   const [vehicles, setVehicles] = useState([])
   
@@ -65,6 +71,11 @@ function App() {
   
   // Calcular valor total de vehículos
   const totalVehicleValue = vehicles.reduce((sum, vehicle) => sum + vehicle.valor, 0)
+
+  // Manejar cerrar sesión
+  const handleLogout = () => {
+    logout();
+  };
   
   // Secciones disponibles para la navegación
   const sections = [
@@ -426,16 +437,31 @@ function App() {
             <div className="flex items-center">
               <img src={logoImgDark} alt="Cliquéalo" className="h-6" />
             </div>
-            <button 
-              className="md:hidden text-white p-2"
-              onClick={toggleMobileMenu}
-              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
-            >
-              {mobileMenuOpen ? 
-                <IoCloseOutline className="h-6 w-6" /> : 
-                <IoMenuOutline className="h-6 w-6" />
-              }
-            </button>
+            <div className="flex items-center">
+              {/* Información del usuario */}
+              <div className="hidden md:flex items-center mr-4">
+                <span className="text-white text-sm font-medium">
+                  {user?.usuario} <span className="text-gray-400">({user?.rol})</span>
+                </span>
+              </div>
+              {/* Botón de cerrar sesión */}
+              <button 
+                onClick={handleLogout}
+                className="text-white hover:text-gray-300 text-sm px-3 py-1 mr-4 border border-gray-600 rounded"
+              >
+                Cerrar sesión
+              </button>
+              <button 
+                className="md:hidden text-white p-2"
+                onClick={toggleMobileMenu}
+                aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+              >
+                {mobileMenuOpen ? 
+                  <IoCloseOutline className="h-6 w-6" /> : 
+                  <IoMenuOutline className="h-6 w-6" />
+                }
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -587,4 +613,45 @@ function App() {
   )
 }
 
-export default App
+// Componente App con autenticación
+function App() {
+  // Estado para controlar si se muestra la página de login o de registro
+  const [showCreateAccount, setShowCreateAccount] = useState(false);
+  // Obtener estado y funciones de autenticación
+  const { isAuthenticated, loading } = useContext(AuthContext);
+  
+  // Mostrar indicador de carga mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-800 mx-auto"></div>
+          <p className="mt-4 text-gray-700">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Si el usuario está autenticado, mostrar la aplicación principal
+  if (isAuthenticated()) {
+    return <MainApp />;
+  }
+  
+  // Si no está autenticado, mostrar la página de login o de registro según el estado
+  return showCreateAccount ? (
+    <CreateAccount onLoginClick={() => setShowCreateAccount(false)} />
+  ) : (
+    <Login onCreateAccountClick={() => setShowCreateAccount(true)} />
+  );
+}
+
+// Envolver App con el proveedor de autenticación
+const AppWithAuth = () => {
+  return (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  );
+};
+
+export default AppWithAuth;

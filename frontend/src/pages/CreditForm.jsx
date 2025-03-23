@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   IoPlayCircleOutline, 
   IoBusinessOutline,
@@ -8,7 +8,9 @@ import {
   IoCheckmarkCircle,
   IoTrashOutline,
   IoInformationCircleOutline,
-  IoGitCompareOutline
+  IoGitCompareOutline,
+  IoAlertCircleOutline,
+  IoCloseCircleOutline
 } from 'react-icons/io5';
 import {
   Chart as ChartJS,
@@ -73,6 +75,8 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
   // Estado para bancos seleccionados para comparación
   const [selectedBanks, setSelectedBanks] = useState([]);
   const [selectedBankId, setSelectedBankId] = useState(null);
+  // Estado para errores de validación
+  const [validationError, setValidationError] = useState(null);
   
   // Estado para bancos con configuración personalizada
   const [customizedBanks, setCustomizedBanks] = useState({});
@@ -89,6 +93,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
   const isFirstRenderRef = useRef(true);
   const previousDownPaymentPercentageRef = useRef(downPaymentPercentage);
   const previousVehiclesValueRef = useRef(vehiclesValue);
+  const validationDebounceRef = useRef(null);
   
   // Calcular monto a financiar
   const financingAmount = vehiclesValue - (downPaymentAmount || 0);
@@ -122,12 +127,175 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
     }
   }, [downPaymentPercentage, vehiclesValue, updateDownPaymentFromPercentage]);
 
+  // Componente de alerta de error
+  const ErrorAlert = ({ message, onClose }) => (
+    <motion.div 
+      className="fixed top-4 right-4 z-50 max-w-md"
+      initial={{ opacity: 0, y: -50, scale: 0.3 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -20, scale: 0.5 }}
+      transition={{ type: "spring", damping: 20 }}
+    >
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-lg flex items-start">
+        <IoAlertCircleOutline className="text-red-500 text-2xl flex-shrink-0 mr-3" />
+        <div className="flex-grow">
+          <p className="text-red-700 font-medium">{message}</p>
+        </div>
+        <button 
+          onClick={onClose} 
+          className="text-red-400 hover:text-red-600 transition-colors ml-2"
+        >
+          <IoCloseCircleOutline className="text-xl" />
+        </button>
+      </div>
+    </motion.div>
+  );
+
+  // Estado para evitar validaciones en loop
+  const [validationShown, setValidationShown] = useState(false);
+  
+  // Estado para evitar revalidaciones frecuentes
+  const [lastValidatedValues, setLastValidatedValues] = useState({
+    downPaymentAmount: null,
+    downPaymentPercentage: null,
+    customRate: null,
+    customCat: null
+  });
+  
+  // Validar que no haya valores incompatibles (con debouncer)
+  const validateCreditConfig = useCallback(() => {
+    // Evitar validaciones repetitivas de los mismos valores
+    const currentValues = {
+      downPaymentAmount,
+      downPaymentPercentage,
+      customRate,
+      customCat
+    };
+    
+    // Verificar si los valores han cambiado desde la última validación
+    const valuesChanged = Object.keys(currentValues).some(
+      key => currentValues[key] !== lastValidatedValues[key]
+    );
+    
+    if (!valuesChanged && validationError) {
+      return; // Evitar revalidar si los valores no cambiaron y ya hay un error
+    }
+    
+    // Limpiar cualquier validación pendiente
+    if (validationDebounceRef.current) {
+      clearTimeout(validationDebounceRef.current);
+    }
+    
+    // Crear un nuevo timer para la validación con debounce
+    validationDebounceRef.current = setTimeout(() => {
+      // Actualizar el último conjunto de valores validados
+      setLastValidatedValues(currentValues);
+      
+      // Validar enganche no mayor al 100% del valor del vehículo
+      if (downPaymentAmount > vehiclesValue && vehiclesValue > 0) {
+        if (!validationShown) {
+          setValidationError("El enganche no puede ser superior al valor del vehículo");
+          setValidationShown(true);
+        }
+        return false;
+      }
+      
+      // Validar porcentaje no mayor a 100%
+      if (downPaymentPercentage > 100) {
+        if (!validationShown) {
+          setValidationError("El porcentaje de enganche no puede ser superior a 100%");
+          setValidationShown(true);
+        }
+        return false;
+      }
+      
+      // Validar que no haya valores negativos
+      if (downPaymentAmount < 0 || downPaymentPercentage < 0 || vehiclesValue < 0) {
+        if (!validationShown) {
+          setValidationError("Los valores no pueden ser negativos");
+          setValidationShown(true);
+        }
+        return false;
+      }
+      
+      // Validar tasa de interés
+      if (useCustomRate && customRate < 0) {
+        if (!validationShown) {
+          setValidationError("La tasa de interés no puede ser negativa");
+          setValidationShown(true);
+        }
+        return false;
+      }
+      
+      if (useCustomRate && customRate > 99) {
+        if (!validationShown) {
+          setValidationError("La tasa de interés no puede ser mayor a 99%");
+          setValidationShown(true);
+        }
+        return false;
+      }
+      
+      // Validar CAT
+      if (useCustomCat && customCat < 0) {
+        if (!validationShown) {
+          setValidationError("El CAT no puede ser negativo");
+          setValidationShown(true);
+        }
+        return false;
+      }
+      
+      if (useCustomCat && customCat > 100) {
+        if (!validationShown) {
+          setValidationError("El CAT no puede ser mayor a 100%");
+          setValidationShown(true);
+        }
+        return false;
+      }
+      
+      // Si todo está bien, limpiar error y resetear el estado de validación mostrada
+      setValidationError(null);
+      setValidationShown(false);
+      return true;
+    }, 800); // 800ms de debounce para evitar mensajes intermitentes
+  }, [
+    downPaymentAmount, 
+    downPaymentPercentage, 
+    vehiclesValue, 
+    customRate,
+    customCat,
+    useCustomRate,
+    useCustomCat,
+    lastValidatedValues,
+    validationError,
+    validationShown
+  ]);
+
+  // Ejecutar validación cuando cambien los valores relevantes
+  useEffect(() => {
+    // Ejecutar la validación de forma debounced
+    validateCreditConfig();
+    
+    // Cleanup para cancelar el timer si el componente se desmonta
+    return () => {
+      if (validationDebounceRef.current) {
+        clearTimeout(validationDebounceRef.current);
+      }
+    };
+  }, [
+    validateCreditConfig,
+    downPaymentAmount,
+    downPaymentPercentage,
+    customRate,
+    customCat
+  ]);
+
   // Controlador para cambio de porcentaje desde el slider o input numérico
   const handleDownPaymentPercentageChange = useCallback((value) => {
     // Asegurarnos de que el valor es un número válido
     const numValue = Number(value);
     if (!isNaN(numValue)) {
       setDownPaymentPercentage(numValue);
+      // La validación se hará a través de validateCreditConfig
     }
   }, []);
 
@@ -154,6 +322,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
     // Verificar si es un número válido
     if (!isNaN(newAmount)) {
       setDownPaymentAmount(newAmount);
+      // La validación se hará a través de validateCreditConfig
       
       // Limpiar cualquier debounce timer existente
       if (debounceTimerRef.current) {
@@ -164,7 +333,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
       debounceTimerRef.current = setTimeout(() => {
         // Calculamos el nuevo porcentaje solo si tenemos un valor válido
         if (vehiclesValue > 0) {
-          const newPercentage = Math.min(60, Math.max(10, (newAmount * 100) / vehiclesValue));
+          const newPercentage = Math.min(100, Math.max(0, (newAmount * 100) / vehiclesValue));
           // Usar una función de actualización para garantizar el valor más reciente
           setDownPaymentPercentage(prev => {
             const rounded = Math.round(newPercentage);
@@ -175,6 +344,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
       }, 500); // 500ms de debounce
     }
   }, [vehiclesValue]);
+  
   // Animaciones
   const formAnimation = {
     hidden: { opacity: 0 },
@@ -186,7 +356,6 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
       }
     }
   };
-
   const sectionAnimation = {
     hidden: { opacity: 0, y: 20 },
     visible: { 
@@ -469,16 +638,15 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
             Distribución del financiamiento
           </label>
           <div className="flex justify-between mb-1">
-            <span className="govuk-form-hint">Ajuste el porcentaje de enganche (10% - 60%)</span>
+            <span className="govuk-form-hint">Ajuste el porcentaje de enganche (0% - 100%)</span>
             <div className="flex items-center">
               <motion.input
                 type="number"
-                min="10"
-                max="60"
+               
                 step="1"
                 value={downPaymentPercentage}
                 onChange={(e) => handleDownPaymentPercentageChange(e.target.value)}
-                className="w-16 h-8 border border-royal-gray-300 rounded text-center mr-1"
+                className={`w-16 h-8 border ${validationError ? 'border-red-500 bg-red-50' : 'border-royal-gray-300'} rounded text-center mr-1`}
                 whileTap={{ scale: 1.05 }}
               />
               <span className="font-bold">%</span>
@@ -494,6 +662,23 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
               </div>
             </div>
 
+            {/* Mensaje de error de validación */}
+            <AnimatePresence>
+              {validationError && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-3 bg-red-50 border border-red-200 rounded-md p-3"
+                >
+                  <div className="flex items-center text-red-700">
+                    <IoAlertCircleOutline className="h-5 w-5 mr-2" />
+                    <p className="text-sm">{validationError}</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
             {/* Reemplazo de barra visual con gráfico de donut */}
             <div className="w-full h-20 mb-2">
               <Doughnut 
@@ -502,14 +687,24 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                   datasets: [
                     {
                       data: [downPaymentPercentage, 100 - downPaymentPercentage],
-                      backgroundColor: [
-                        'rgba(99, 102, 241, 0.8)',
-                        'rgba(20, 184, 166, 0.8)'
-                      ],
-                      borderColor: [
-                        'rgba(79, 70, 229, 1)',
-                        'rgba(13, 148, 136, 1)'
-                      ],
+                      backgroundColor: validationError 
+                        ? [
+                            'rgba(239, 68, 68, 0.8)',  // Rojo para indicar error
+                            'rgba(239, 68, 68, 0.5)'
+                          ]
+                        : [
+                            'rgba(99, 102, 241, 0.8)',
+                            'rgba(20, 184, 166, 0.8)'
+                          ],
+                      borderColor: validationError 
+                        ? [
+                            'rgba(220, 38, 38, 1)',
+                            'rgba(220, 38, 38, 0.7)'
+                          ]
+                        : [
+                            'rgba(79, 70, 229, 1)',
+                            'rgba(13, 148, 136, 1)'
+                          ],
                       borderWidth: 1,
                       cutout: '65%',
                       hoverOffset: 5
@@ -585,8 +780,12 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                       {
                         label: 'Pago inicial',
                         data: [downPaymentAmount],
-                        backgroundColor: 'rgba(79, 70, 229, 0.8)',
-                        borderColor: 'rgba(67, 56, 202, 1)',
+                        backgroundColor: validationError 
+                          ? 'rgba(239, 68, 68, 0.8)' 
+                          : 'rgba(79, 70, 229, 0.8)',
+                        borderColor: validationError 
+                          ? 'rgba(220, 38, 38, 1)' 
+                          : 'rgba(67, 56, 202, 1)',
                         borderWidth: 1,
                         barPercentage: 0.9,
                         categoryPercentage: 0.9
@@ -594,8 +793,12 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                       {
                         label: 'A financiar',
                         data: [financingAmount],
-                        backgroundColor: 'rgba(20, 184, 166, 0.8)',
-                        borderColor: 'rgba(13, 148, 136, 1)',
+                        backgroundColor: validationError 
+                          ? 'rgba(239, 68, 68, 0.5)' 
+                          : 'rgba(20, 184, 166, 0.8)',
+                        borderColor: validationError 
+                          ? 'rgba(220, 38, 38, 0.7)' 
+                          : 'rgba(13, 148, 136, 1)',
                         borderWidth: 1,
                         barPercentage: 0.9,
                         categoryPercentage: 0.9
@@ -671,7 +874,7 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                         setDownPaymentAmount(Math.round((vehiclesValue * downPaymentPercentage) / 100));
                       }
                     }}
-                    className="w-32 h-8 border border-royal-gray-300 rounded text-center font-bold"
+                    className={`w-32 h-8 border ${validationError ? 'border-red-500 bg-red-50' : 'border-royal-gray-300'} rounded text-center font-bold`}
                     whileTap={{ scale: 1.05 }}
                   />
                   {typeof downPaymentAmount === 'number' && (
@@ -758,8 +961,12 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                     max="25"
                     step="0.1"
                     value={customRate}
-                    onChange={(e) => setCustomRate(Number(e.target.value))}
-                    className="w-16 h-8 border border-royal-gray-300 rounded text-center mr-1"
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          setCustomRate(value);
+                          // La validación se hará a través de validateCreditConfig
+                        }}
+                    className={`w-16 h-8 border ${validationError ? 'border-red-500 bg-red-50' : 'border-royal-gray-300'} rounded text-center mr-1`}
                     whileTap={{ scale: 1.05 }}
                   />
                   <span className="font-bold">%</span>
@@ -875,8 +1082,12 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
                         max="30"
                         step="0.1"
                         value={customCat}
-                        onChange={(e) => setCustomCat(Number(e.target.value))}
-                        className="w-16 h-8 border border-royal-gray-300 rounded text-center mr-1"
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          setCustomCat(value);
+                          // La validación se hará a través de validateCreditConfig
+                        }}
+                        className={`w-16 h-8 border ${validationError ? 'border-red-500 bg-red-50' : 'border-royal-gray-300'} rounded text-center mr-1`}
                         whileTap={{ scale: 1.05 }}
                       />
                       <span className="font-bold">%</span>
@@ -1573,6 +1784,19 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
         </motion.div>
       )}
       
+          {/* Alerta flotante para errores graves */}
+          <AnimatePresence>
+            {validationError && (
+              <ErrorAlert 
+                message={validationError} 
+                onClose={() => {
+                  setValidationError(null);
+                  setValidationShown(false);
+                }} 
+              />
+            )}
+          </AnimatePresence>
+      
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div>
           {selectedBanks.length > 0 && (
@@ -1591,9 +1815,10 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
           {selectedBanks.length > 0 && (
               <motion.button
                 onClick={handleCalculate}
-                className="govuk-button-secondary flex items-center"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+                disabled={validationError !== null}
+                className={`govuk-button-secondary flex items-center ${validationError !== null ? 'opacity-50 cursor-not-allowed' : ''}`}
+                whileHover={validationError === null ? { scale: 1.03 } : {}}
+                whileTap={validationError === null ? { scale: 0.97 } : {}}
               >
                 <IoGitCompareOutline className="h-5 w-5 mr-2" />
                 Comparar seleccionados
@@ -1601,10 +1826,10 @@ const CreditForm = ({ vehiclesValue, onCreditConfigChange, onCalculateResults })
           )}
           <motion.button
             onClick={handleCalculate}
-            disabled={vehiclesValue <= 0}
-            className={`govuk-button flex items-center ${vehiclesValue <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            disabled={vehiclesValue <= 0 || validationError !== null}
+            className={`govuk-button flex items-center ${vehiclesValue <= 0 || validationError !== null ? 'opacity-50 cursor-not-allowed' : ''}`}
+            whileHover={vehiclesValue > 0 && validationError === null ? { scale: 1.05 } : {}}
+            whileTap={vehiclesValue > 0 && validationError === null ? { scale: 0.95 } : {}}
           >
             <IoPlayCircleOutline className="h-5 w-5 mr-2" />
             Calcular todas las opciones

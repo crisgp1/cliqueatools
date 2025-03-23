@@ -3,11 +3,35 @@
     "version": "1.0.0",
     "description": "Cliqueatools Project",
     "scripts": {
-      "install": "cd frontend && npm install",
-      "build": "cd frontend && npm run build",
-      "start": "cd frontend && npm start"
+        "install:all": "npm install && cd frontend && npm install",
+        "install:frontend": "cd frontend && npm install",
+        "install:backend": "npm install",
+        "initdb": "node backend/scripts/initdb.js",
+        "setup:dev": "npm run initdb && npm run dev",
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev:backend": "nodemon backend/app.js",
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "build": "cd frontend && npm run build",
+        "start:backend": "node backend/app.js",
+        "start:frontend": "cd frontend && npm start",
+        "start": "npm run start:backend"
     },
     "engines": {
-      "node": ">=18.0.0"
+        "node": ">=18.0.0"
+    },
+    "dependencies": {
+        "bcrypt": "^5.1.1",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
+        "express": "^4.18.3",
+        "jsonwebtoken": "^9.0.2",
+        "morgan": "^1.10.0",
+        "pg": "^8.11.3",
+        "pg-hstore": "^2.3.4",
+        "sequelize": "^6.37.6"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "nodemon": "^3.1.0"
     }
-  }
+}
