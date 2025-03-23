@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import VehicleForm from './components/VehicleForm'
-import ClientForm from './components/ClientForm'
+import VehicleForm from './pages/VehicleForm'
+import ClientForm from './pages/ClientForm'
 import logoImg from './assets/logo.png'
 import logoImgDark from './assets/logo-dark.png'
-import CreditForm from './components/CreditForm'
-import BankComparison from './components/BankComparison'
-import AmortizationTable from './components/AmortizationTable'
+import CreditForm from './pages/CreditForm'
+import BankComparison from './pages/BankComparison'
+import AmortizationTable from './pages/AmortizationTable'
+import ContractForm from './pages/ContractForm'
 import { 
   IoHomeOutline, 
   IoCarSportOutline,
@@ -16,7 +17,8 @@ import {
   IoAddOutline,
   IoTrashOutline,
   IoMenuOutline,
-  IoCloseOutline
+  IoCloseOutline,
+  IoDocumentTextOutline
 } from 'react-icons/io5'
 
 function App() {
@@ -66,7 +68,8 @@ function App() {
     // Cliente deshabilitado según requerimiento
     { id: 'credit', name: 'Configurar Crédito', icon: 'credit-card', disabled: vehicles.length === 0 },
     { id: 'results', name: 'Resultados', icon: 'chart', disabled: creditResults.length === 0 },
-    { id: 'amortization', name: 'Tabla de Amortización', icon: 'table', disabled: !selectedBank }
+    { id: 'amortization', name: 'Tabla de Amortización', icon: 'table', disabled: !selectedBank },
+    { id: 'contract', name: 'Contrato', icon: 'document', disabled: vehicles.length === 0 }
   ]
   
   // Actualizar monto de enganche cuando cambia el valor total de vehículos
@@ -138,6 +141,8 @@ function App() {
         return <IoStatsChartOutline className="h-5 w-5" />
       case 'table':
         return <IoGridOutline className="h-5 w-5" />
+      case 'document':
+        return <IoDocumentTextOutline className="h-5 w-5" />
       default:
         return null
     }
@@ -212,6 +217,21 @@ function App() {
                 onBack={() => setActiveSection('results')}
               />
             )}
+          </div>
+        )
+      case 'contract':
+        return (
+          <div className="bg-white shadow-md p-6 border-l-4 border-l-orange-700">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              <span className="inline-flex items-center">
+                <IoDocumentTextOutline className="h-6 w-6 mr-2 text-orange-600" />
+                Contrato de Compraventa
+              </span>
+            </h2>
+            <ContractForm 
+              vehicles={vehicles}
+              client={client}
+            />
           </div>
         )
       default:

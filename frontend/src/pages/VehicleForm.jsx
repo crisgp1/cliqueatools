@@ -4,6 +4,7 @@ import { IoAddOutline, IoTrashOutline } from 'react-icons/io5';
 
 const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle }) => {
   const [newVehicle, setNewVehicle] = useState({
+    descripcion: '',
     marca: '',
     modelo: '',
     año: new Date().getFullYear(),
@@ -106,6 +107,20 @@ const VehicleForm = ({ vehicles, onAddVehicle, onUpdateVehicle, onRemoveVehicle 
         <h3 className="govuk-form-section-title">Agregar nuevo vehículo</h3>
         <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
          
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="descripcion" className="govuk-label">
+              Descripción <span className="text-royal-red">*</span>
+            </label>
+            <input
+              type="text"
+              id="descripcion"
+              name="descripcion"
+              value={newVehicle.descripcion}
+              onChange={handleNewVehicleChange}
+              className="govuk-input"
+              required
+            />
+          </motion.div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div className="govuk-form-group" variants={itemAnimation}>
