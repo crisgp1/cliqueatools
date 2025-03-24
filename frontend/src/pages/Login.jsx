@@ -1,6 +1,13 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import logoImg from '../assets/logo.png';
+import { motion } from 'framer-motion';
+import Lottie from 'lottie-react';
+
+// Importar las animaciones
+import loadingAnimation from '../assets/loading-animation.json';
+import successAnimation from '../assets/success-animation.json';
+import errorAnimation from '../assets/error-animation.json';
 
 const Login = ({ onCreateAccountClick }) => {
   // Estado para almacenar los datos del formulario
@@ -12,6 +19,9 @@ const Login = ({ onCreateAccountClick }) => {
   // Estado para manejar errores y carga
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPreloader, setShowPreloader] = useState(false);
+  const [animationState, setAnimationState] = useState('loading'); // 'loading', 'success', 'error'
+  const [statusMessage, setStatusMessage] = useState('');
 
   // Obtener función de login del contexto
   const { login } = useContext(AuthContext);
@@ -27,6 +37,16 @@ const Login = ({ onCreateAccountClick }) => {
     if (error) setError('');
   };
 
+  // Efecto para cerrar el preloader después de un login exitoso
+  useEffect(() => {
+    if (animationState === 'success') {
+      const timer = setTimeout(() => {
+        setShowPreloader(false);
+      }, 1500); // Dar tiempo para que se vea la animación de éxito
+      return () => clearTimeout(timer);
+    }
+  }, [animationState]);
+
   // Manejar envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,25 +58,115 @@ const Login = ({ onCreateAccountClick }) => {
     }
     
     setLoading(true);
+    setShowPreloader(true);
+    setAnimationState('loading');
+    setStatusMessage('Verificando credenciales...');
     setError('');
     
     try {
       // Intentar inicio de sesión
       const result = await login(formData.usuario, formData.password);
       
-      if (!result.success) {
+      if (result.success) {
+        setAnimationState('success');
+        setStatusMessage('¡Acceso exitoso!');
+        // El preloader se cerrará automáticamente después de la animación (ver useEffect)
+      } else {
+        setAnimationState('error');
+        setStatusMessage('Error de acceso');
         setError(result.error || 'Credenciales inválidas');
+        
+        // Cerrar el preloader de error después de un tiempo
+        setTimeout(() => {
+          setLoading(false);
+          setTimeout(() => {
+            setShowPreloader(false);
+          }, 300);
+        }, 1500);
       }
     } catch (err) {
+      setAnimationState('error');
+      setStatusMessage('Error de conexión');
       setError('Error al conectar con el servidor');
       console.error('Error de conexión:', err);
-    } finally {
-      setLoading(false);
+      
+      // Cerrar el preloader de error después de un tiempo
+      setTimeout(() => {
+        setLoading(false);
+        setTimeout(() => {
+          setShowPreloader(false);
+        }, 300);
+      }, 1500);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center">
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center relative">
+      {/* Preloader overlay con animaciones Lottie */}
+      {showPreloader && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center"
+        >
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="w-52 h-52"
+          >
+            {animationState === 'loading' && (
+              <Lottie 
+                animationData={loadingAnimation} 
+                loop={true}
+                className="w-full h-full"
+              />
+            )}
+            {animationState === 'success' && (
+              <Lottie 
+                animationData={successAnimation} 
+                loop={false} 
+                className="w-full h-full"
+              />
+            )}
+            {animationState === 'error' && (
+              <Lottie 
+                animationData={errorAnimation} 
+                loop={false}
+                className="w-full h-full"
+              />
+            )}
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className={`mt-6 font-semibold text-xl ${
+              animationState === 'loading' ? 'text-blue-800' :
+              animationState === 'success' ? 'text-green-700' :
+              'text-red-600'
+            }`}
+          >
+            {animationState === 'loading' ? 'Iniciando sesión' :
+             animationState === 'success' ? '¡Acceso exitoso!' :
+             'Error de acceso'}
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
+            className={`mt-4 text-sm ${
+              animationState === 'loading' ? 'text-gray-600' :
+              animationState === 'success' ? 'text-green-600' :
+              'text-red-500'
+            }`}
+          >
+            {statusMessage}
+          </motion.div>
+        </motion.div>
+      )}
       <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-6">
           <img src={logoImg} alt="Cliquéalo" className="h-16 mx-auto mb-4" />
@@ -127,13 +237,14 @@ const Login = ({ onCreateAccountClick }) => {
               </div>
             </div>
             
-            <button
+            <motion.button
               type="submit"
               disabled={loading}
+              whileTap={{ scale: 0.98 }}
               className={`w-full py-3 px-4 bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-lg shadow-md focus:outline-none ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-            </button>
+              {loading ? 'Procesando...' : 'Iniciar Sesión'}
+            </motion.button>
             
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-600">

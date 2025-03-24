@@ -6,6 +6,9 @@ import CreateAccount from './pages/CreateAccount'
 import { AuthProvider, AuthContext } from './context/AuthContext'
 import logoImg from './assets/logo.png'
 import logoImgDark from './assets/logo-dark.png'
+import { motion, AnimatePresence } from 'framer-motion'
+import Lottie from 'lottie-react'
+import logoutAnimation from './assets/logout-animation.json'
 import CreditForm from './pages/CreditForm'
 import BankComparison from './pages/BankComparison'
 import AmortizationTable from './pages/AmortizationTable'
@@ -24,10 +27,27 @@ import {
   IoDocumentTextOutline
 } from 'react-icons/io5'
 
+// Animaciones para las transiciones
+const fadeIn = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.5 }
+}
+
+const slideUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 },
+  transition: { duration: 0.5, ease: "easeOut" }
+}
+
 // Componente principal
 const MainApp = () => {
   // Obtener estado y funciones de autenticación
   const { user, logout } = useContext(AuthContext);
+  // Estado para mostrar el preloader de cierre de sesión
+  const [showLogoutAnimation, setShowLogoutAnimation] = useState(false);
   // Estado para gestionar vehículos
   const [vehicles, setVehicles] = useState([])
   
@@ -74,7 +94,14 @@ const MainApp = () => {
 
   // Manejar cerrar sesión
   const handleLogout = () => {
-    logout();
+    // Mostrar animación de cierre de sesión
+    setShowLogoutAnimation(true);
+    
+    // Esperar a que se complete la animación antes de cerrar la sesión
+    setTimeout(() => {
+      logout();
+      setShowLogoutAnimation(false);
+    }, 1500);
   };
   
   // Secciones disponibles para la navegación
@@ -429,7 +456,26 @@ const MainApp = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <motion.div 
+      className="min-h-screen bg-gray-100 flex flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Preloader de cierre de sesión */}
+      {showLogoutAnimation && (
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+          <div className="w-52 h-52">
+            <Lottie 
+              animationData={logoutAnimation} 
+              loop={true}
+            />
+          </div>
+          <div className="mt-6 text-blue-800 font-semibold text-lg">
+            Cerrando sesión...
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="bg-gray-800 shadow-md py-3 sticky top-0 z-20">
         <div className="container mx-auto px-4">
@@ -574,7 +620,12 @@ const MainApp = () => {
       </div>  
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-5">
+      <motion.footer 
+        className="bg-gray-900 text-white py-5"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0 text-center md:text-left">
@@ -587,7 +638,7 @@ const MainApp = () => {
             </div>
           </div>
         </div>
-      </footer>
+      </motion.footer>
       
       {/* Mobile Bottom Navigation - Fixed at bottom for quick access */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 shadow-lg z-10">
@@ -609,7 +660,7 @@ const MainApp = () => {
           ))}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -632,16 +683,38 @@ function App() {
     );
   }
   
-  // Si el usuario está autenticado, mostrar la aplicación principal
-  if (isAuthenticated()) {
-    return <MainApp />;
-  }
-  
-  // Si no está autenticado, mostrar la página de login o de registro según el estado
-  return showCreateAccount ? (
-    <CreateAccount onLoginClick={() => setShowCreateAccount(false)} />
-  ) : (
-    <Login onCreateAccountClick={() => setShowCreateAccount(true)} />
+  return (
+    <AnimatePresence mode="wait">
+      {/* Si el usuario está autenticado, mostrar la aplicación principal con animación */}
+      {isAuthenticated() ? (
+        <motion.div
+          key="main-app"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+        >
+          <MainApp />
+        </motion.div>
+      ) : (
+        // Si no está autenticado, mostrar la página de login o de registro según el estado
+        showCreateAccount ? (
+          <motion.div
+            key="create-account"
+            {...slideUp}
+          >
+            <CreateAccount onLoginClick={() => setShowCreateAccount(false)} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="login"
+            {...fadeIn}
+          >
+            <Login onCreateAccountClick={() => setShowCreateAccount(true)} />
+          </motion.div>
+        )
+      )}
+    </AnimatePresence>
   );
 }
 
