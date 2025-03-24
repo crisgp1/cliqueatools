@@ -12,7 +12,7 @@
         "dev:backend": "nodemon backend/app.js",
         "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
         "build": "cd frontend && npm run build",
-        "start:backend": "node backend/app.js",
+        "start:backend": "npm rebuild bcrypt --build-from-source && node backend/app.js",
         "start:frontend": "cd frontend && npm start",
         "start": "npm run start:backend"
     },
