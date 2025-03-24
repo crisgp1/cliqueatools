@@ -60,7 +60,7 @@ const CreateAccount = ({ onLoginClick }) => {
       const { confirmPassword, ...dataToSend } = formData;
       
       // Enviar solicitud de registro
-      const response = await fetch('/api/usuarios/registro', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/usuarios/registro`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   // Función para iniciar sesión
   const login = async (usuario, password) => {
     try {
-      const response = await fetch('/api/usuarios/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/usuarios/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
