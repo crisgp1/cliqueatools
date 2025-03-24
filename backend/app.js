@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 // Configuración de CORS para permitir solicitudes desde el frontend
 app.use(cors({
-  origin: 'http://localhost:5173', // URL específica del frontend (Vite)
+  origin: ['http://localhost:5173', 'https://cliqueatools.onrender.com', 'https://backend-vwir.onrender.com'], // URLs permitidas
   credentials: true, // Permitir credenciales (cookies, headers authorization, etc)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
   allowedHeaders: ['Content-Type', 'Authorization'] // Headers permitidos

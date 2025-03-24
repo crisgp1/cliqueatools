@@ -11,7 +11,7 @@ export default defineConfig(({ command, mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.VITE_API_URL,
+          target: env.VITE_API_URL.replace('/api', ''), // Evitar duplicación de /api
           changeOrigin: true,
           secure: false,
           ws: true
