@@ -229,6 +229,7 @@ const MainApp = () => {
             </h2>
             <CreditForm 
               vehiclesValue={totalVehicleValue}
+              vehicles={vehicles}
               onCreditConfigChange={handleCreditConfigChange}
               onCalculateResults={handleCalculateResults}
             />

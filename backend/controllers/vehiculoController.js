@@ -39,14 +39,33 @@ const vehiculoController = {
     }
   },
 
-  // Obtener todos los vehículos
+  // Obtener todos los vehículos con paginación
   obtenerTodos: async (req, res) => {
     try {
-      const vehiculos = await Vehiculo.findAll();
+      // Parámetros de paginación (opcionales)
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      const offset = (page - 1) * limit;
+
+      // Obtener total de registros para metadatos de paginación
+      const totalCount = await Vehiculo.count();
+      
+      // Consulta con paginación
+      const vehiculos = await Vehiculo.findAll({
+        limit,
+        offset,
+        order: [['vehiculo_id', 'DESC']] // Más recientes primero
+      });
 
       res.json({
         success: true,
-        data: vehiculos
+        data: vehiculos,
+        pagination: {
+          total: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit)
+        }
       });
     } catch (error) {
       console.error('Error al obtener vehículos:', error);
