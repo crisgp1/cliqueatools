@@ -49,11 +49,9 @@ const useVehicles = (token, onVehicleChange = null) => {
       setPagination(paginationData || pagination);
       setLoading(false);
       
-      // Sincronizar con estado externo si es necesario
-      if (onVehicleChange && typeof onVehicleChange === 'function') {
-        // Pasar la lista completa de vehículos una sola vez, más eficiente
-        onVehicleChange('load', { vehicles: uniqueVehicles });
-      }
+      // No sincronizamos con estado externo durante la carga inicial
+      // Esto evita logs redundantes y procesamiento innecesario
+      // La sincronización solo se realizará en operaciones individuales (add, update, remove)
     } catch (err) {
       console.error('Error en hook useVehicles:', err);
       setError(err.message || 'Error al cargar los vehículos');

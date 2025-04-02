@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback } from 'react';
+import { useState, useContext, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 
@@ -26,6 +26,9 @@ const VehicleForm = ({ vehicles: externalVehicles, onAddVehicle, onUpdateVehicle
   // Contexto de autenticación para obtener el token
   const { token } = useContext(AuthContext);
   
+  // Log para depuración: vehículos recibidos como props
+  console.log('[VehicleForm] Vehículos externos recibidos como props:', externalVehicles);
+  
   // Estados para modales
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -37,23 +40,25 @@ const VehicleForm = ({ vehicles: externalVehicles, onAddVehicle, onUpdateVehicle
   // Definir funciones para sincronizar con estado externo (si existen las props)
   // Usando useCallback para prevenir creaciones de funciones innecesarias en cada renderizado
   const syncWithExternalState = useCallback((operation, data, emptyFn = null) => {
+    console.log(`[VehicleForm] Sync llamada con operación: ${operation}`, data);
+    
     // Nueva operación 'load' para cargar múltiples vehículos a la vez
     if (operation === 'load' && data.vehicles && Array.isArray(data.vehicles)) {
-      // Si existen funciones para manejar el estado externo, sincronizamos los vehículos
-      if (typeof onAddVehicle === 'function') {
-        // Usamos la función que tenga mayor sentido según el componente padre
-        // Podría ser onAddVehicle, onUpdateVehicle o una función especial para carga inicial
-        data.vehicles.forEach(vehicle => onAddVehicle(vehicle));
-      }
+      console.log('[VehicleForm] Omitiendo sincronización de carga inicial para evitar duplicados');
+      // No sincronizamos los vehículos al cargarlos desde la API para evitar duplicados
+      // Los datos ya están disponibles a través del hook useVehicles
       return;
     }
     
     // Operaciones individuales existentes
     if (operation === 'add' && typeof onAddVehicle === 'function') {
+      console.log('[VehicleForm] Sincronizando AÑADIR vehículo:', data);
       return onAddVehicle(data);
     } else if (operation === 'update' && typeof onUpdateVehicle === 'function') {
+      console.log('[VehicleForm] Sincronizando ACTUALIZAR vehículo:', data);
       return onUpdateVehicle(data.id, data);
     } else if (operation === 'remove' && typeof onRemoveVehicle === 'function') {
+      console.log('[VehicleForm] Sincronizando ELIMINAR vehículo con ID:', data.id);
       return onRemoveVehicle(data.id);
     }
     
@@ -70,6 +75,31 @@ const VehicleForm = ({ vehicles: externalVehicles, onAddVehicle, onUpdateVehicle
     removeVehicle,
     clearError 
   } = useVehicles(token, syncWithExternalState);
+  
+  // Log para depuración: comparar vehículos del hook con externos
+  console.log('[VehicleForm] Vehículos del hook useVehicles:', vehicles);
+  
+  // Verificar si hay duplicados entre hook y props externas
+  useEffect(() => {
+    if (externalVehicles && externalVehicles.length > 0 && vehicles.length > 0) {
+      console.log('[VehicleForm] Comparando arreglos de vehículos:');
+      console.log('  - Externos (props):', externalVehicles.length);
+      console.log('  - Internos (hook):', vehicles.length);
+      
+      // Detectar posibles duplicados (mismos IDs en ambos arrays)
+      const externalIds = externalVehicles.map(v => v.id);
+      const hookIds = vehicles.map(v => v.id);
+      const duplicatedIds = externalIds.filter(id => hookIds.includes(id));
+      
+      if (duplicatedIds.length > 0) {
+        console.log('[VehicleForm] ⚠️ IDs duplicados encontrados:', duplicatedIds);
+        console.log('[VehicleForm] Vehículos externos con estos IDs:', 
+          externalVehicles.filter(v => duplicatedIds.includes(v.id)));
+        console.log('[VehicleForm] Vehículos internos con estos IDs:', 
+          vehicles.filter(v => duplicatedIds.includes(v.id)));
+      }
+    }
+  }, [externalVehicles, vehicles]);
 
   // Comprueba si el modal informativo ya se mostró para esta sesión
   const checkIfModalShown = () => {
