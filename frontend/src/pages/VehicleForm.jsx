@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback, useEffect } from 'react';
+import { useState, useContext, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 
@@ -37,10 +37,35 @@ const VehicleForm = ({ vehicles: externalVehicles, onAddVehicle, onUpdateVehicle
   const [deleteVehicleId, setDeleteVehicleId] = useState(null);
   const [editingVehicle, setEditingVehicle] = useState(null);
   
+  // Crear una referencia para las funciones de callback
+  const callbacksRef = useRef({
+    onAddVehicle,
+    onUpdateVehicle,
+    onRemoveVehicle
+  });
+  
+  // Actualizar las referencias cuando cambien los callbacks
+  useEffect(() => {
+    callbacksRef.current = {
+      onAddVehicle,
+      onUpdateVehicle,
+      onRemoveVehicle
+    };
+  }, [onAddVehicle, onUpdateVehicle, onRemoveVehicle]);
+  
+  // Referencia para controlar el bloqueo de actualizaciones
+  const isUpdatingRef = useRef(false);
+  
   // Definir funciones para sincronizar con estado externo (si existen las props)
-  // Usando useCallback para prevenir creaciones de funciones innecesarias en cada renderizado
+  // Usando useCallback con referencias para evitar recreaciones innecesarias
   const syncWithExternalState = useCallback((operation, data, emptyFn = null) => {
     console.log(`[VehicleForm] Sync llamada con operación: ${operation}`, data);
+    
+    // Si ya estamos en medio de una actualización, evitar actualizaciones en cascada
+    if (isUpdatingRef.current) {
+      console.log('[VehicleForm] Bloqueando actualización durante sincronización en progreso');
+      return;
+    }
     
     // Nueva operación 'load' para cargar múltiples vehículos a la vez
     if (operation === 'load' && data.vehicles && Array.isArray(data.vehicles)) {
@@ -50,20 +75,60 @@ const VehicleForm = ({ vehicles: externalVehicles, onAddVehicle, onUpdateVehicle
       return;
     }
     
-    // Operaciones individuales existentes
+    // Obtener las últimas versiones de los callbacks desde la referencia
+    const { onAddVehicle, onUpdateVehicle, onRemoveVehicle } = callbacksRef.current;
+    
+    // Activar el bloqueo antes de realizar cambios
+    isUpdatingRef.current = true;
+    
+    // Operaciones individuales con verificaciones de duplicados
     if (operation === 'add' && typeof onAddVehicle === 'function') {
       console.log('[VehicleForm] Sincronizando AÑADIR vehículo:', data);
-      return onAddVehicle(data);
+      // Verificar si el vehículo ya existe en externalVehicles
+      if (!externalVehicles || !externalVehicles.some(v => v.id === data.id)) {
+        onAddVehicle(data);
+      } else {
+        console.log('[VehicleForm] Evitando añadir duplicado:', data.id);
+      }
     } else if (operation === 'update' && typeof onUpdateVehicle === 'function') {
       console.log('[VehicleForm] Sincronizando ACTUALIZAR vehículo:', data);
-      return onUpdateVehicle(data.id, data);
+      // Verificar si el vehículo ya está actualizado en externalVehicles
+      const existingVehicle = externalVehicles?.find(v => v.id === data.id);
+      if (existingVehicle && !isVehicleEqual(existingVehicle, data)) {
+        onUpdateVehicle(data.id, data);
+      } else {
+        console.log('[VehicleForm] Evitando actualización redundante:', data.id);
+      }
     } else if (operation === 'remove' && typeof onRemoveVehicle === 'function') {
       console.log('[VehicleForm] Sincronizando ELIMINAR vehículo con ID:', data.id);
-      return onRemoveVehicle(data.id);
+      // Verificar si el vehículo existe en externalVehicles
+      if (externalVehicles?.some(v => v.id === data.id)) {
+        onRemoveVehicle(data.id);
+      } else {
+        console.log('[VehicleForm] Vehículo ya eliminado:', data.id);
+      }
     }
     
+    // Desactivar el bloqueo después de un tiempo mínimo
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
+    
     return emptyFn ? emptyFn() : null;
-  }, [onAddVehicle, onUpdateVehicle, onRemoveVehicle]);
+  }, [externalVehicles]); // Dependencia: vehículos externos para comparaciones
+  
+  // Función para comparar vehículos y determinar si son iguales
+  const isVehicleEqual = (vehicle1, vehicle2) => {
+    if (!vehicle1 || !vehicle2) return false;
+    return (
+      vehicle1.id === vehicle2.id &&
+      vehicle1.marca === vehicle2.marca &&
+      vehicle1.modelo === vehicle2.modelo &&
+      vehicle1.año === vehicle2.año &&
+      vehicle1.valor === vehicle2.valor &&
+      vehicle1.descripcion === vehicle2.descripcion
+    );
+  };
 
   // Usar el hook personalizado para gestionar los vehículos
   const { 
@@ -80,12 +145,11 @@ const VehicleForm = ({ vehicles: externalVehicles, onAddVehicle, onUpdateVehicle
   console.log('[VehicleForm] Vehículos del hook useVehicles:', vehicles);
   
   // Verificar si hay duplicados entre hook y props externas
+  const initialCheckDoneRef = useRef(false);
   useEffect(() => {
-    if (externalVehicles && externalVehicles.length > 0 && vehicles.length > 0) {
-      console.log('[VehicleForm] Comparando arreglos de vehículos:');
-      console.log('  - Externos (props):', externalVehicles.length);
-      console.log('  - Internos (hook):', vehicles.length);
-      
+    // Solo ejecutar una vez después de la carga inicial
+    if (!initialCheckDoneRef.current && externalVehicles?.length > 0 && vehicles.length > 0) {
+      console.log('[VehicleForm] Verificación única de duplicados:');
       // Detectar posibles duplicados (mismos IDs en ambos arrays)
       const externalIds = externalVehicles.map(v => v.id);
       const hookIds = vehicles.map(v => v.id);
@@ -98,9 +162,11 @@ const VehicleForm = ({ vehicles: externalVehicles, onAddVehicle, onUpdateVehicle
         console.log('[VehicleForm] Vehículos internos con estos IDs:', 
           vehicles.filter(v => duplicatedIds.includes(v.id)));
       }
+      
+      initialCheckDoneRef.current = true; // Marcar como ejecutado
     }
   }, [externalVehicles, vehicles]);
-
+  
   // Comprueba si el modal informativo ya se mostró para esta sesión
   const checkIfModalShown = () => {
     return localStorage.getItem('vehicleInfoModalShown') === 'true';
