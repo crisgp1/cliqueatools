@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { IoDocumentOutline, IoPrintOutline, IoSaveOutline, IoInformationCircleOutline, IoWarningOutline } from 'react-icons/io5';
 import Modal from './Modal';
+import CityStateSelector from '../components/common/CityStateSelector';
 
 const ContractForm = ({ vehicles = [], client = {} }) => {
   const currentDate = new Date();
@@ -11,6 +12,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   const [contractData, setContractData] = useState({
     // Información general
     ciudad: '',
+    estado: '',
     fecha: formattedDate,
     hora: formattedTime,
 
@@ -850,18 +852,21 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
       <div className="govuk-form-section">
         <h3 className="govuk-form-section-title">Información General</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <motion.div className="govuk-form-group" variants={itemAnimation}>
-            <label htmlFor="ciudad" className="govuk-label">
-              Ciudad <span className="text-royal-red">*</span>
-            </label>
-            <input
-              type="text"
-              id="ciudad"
-              name="ciudad"
-              value={contractData.ciudad}
-              onChange={handleChange}
-              className="govuk-input"
-              required
+          {/* Reemplazado input de ciudad con el selector de estados y ciudades */}
+          <motion.div className="govuk-form-group md:col-span-2" variants={itemAnimation}>
+            <CityStateSelector 
+              selectedState={contractData.estado}
+              selectedCity={contractData.ciudad}
+              onChange={({ state, city }) => {
+                setContractData({
+                  ...contractData,
+                  estado: state,
+                  ciudad: city
+                });
+              }}
+              stateLabel="Estado"
+              cityLabel="Ciudad"
+              required={true}
             />
           </motion.div>
 
