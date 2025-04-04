@@ -67,12 +67,10 @@ const VehicleForm = ({ vehicles: externalVehicles, onAddVehicle, onUpdateVehicle
       return;
     }
     
-    // Nueva operación 'load' para cargar múltiples vehículos a la vez
+    // Permitir sincronizar la carga inicial de vehículos con el estado global
     if (operation === 'load' && data.vehicles && Array.isArray(data.vehicles)) {
-      console.log('[VehicleForm] Omitiendo sincronización de carga inicial para evitar duplicados');
-      // No sincronizamos los vehículos al cargarlos desde la API para evitar duplicados
-      // Los datos ya están disponibles a través del hook useVehicles
-      return;
+      console.log('[VehicleForm] Sincronizando vehículos cargados inicialmente:', data.vehicles.length);
+      // Permitir la sincronización para que el contador del sidebar se active
     }
     
     // Obtener las últimas versiones de los callbacks desde la referencia
@@ -144,28 +142,46 @@ const VehicleForm = ({ vehicles: externalVehicles, onAddVehicle, onUpdateVehicle
   // Log para depuración: comparar vehículos del hook con externos
   console.log('[VehicleForm] Vehículos del hook useVehicles:', vehicles);
   
-  // Verificar si hay duplicados entre hook y props externas
+  // Verificar si hay duplicados entre hook y props externas y sincronizar vehículos iniciales
   const initialCheckDoneRef = useRef(false);
   useEffect(() => {
     // Solo ejecutar una vez después de la carga inicial
-    if (!initialCheckDoneRef.current && externalVehicles?.length > 0 && vehicles.length > 0) {
-      console.log('[VehicleForm] Verificación única de duplicados:');
-      // Detectar posibles duplicados (mismos IDs en ambos arrays)
-      const externalIds = externalVehicles.map(v => v.id);
-      const hookIds = vehicles.map(v => v.id);
-      const duplicatedIds = externalIds.filter(id => hookIds.includes(id));
+    if (!initialCheckDoneRef.current && vehicles.length > 0) {
+      console.log('[VehicleForm] Verificación única de duplicados y sincronización inicial:');
       
-      if (duplicatedIds.length > 0) {
-        console.log('[VehicleForm] ⚠️ IDs duplicados encontrados:', duplicatedIds);
-        console.log('[VehicleForm] Vehículos externos con estos IDs:', 
-          externalVehicles.filter(v => duplicatedIds.includes(v.id)));
-        console.log('[VehicleForm] Vehículos internos con estos IDs:', 
-          vehicles.filter(v => duplicatedIds.includes(v.id)));
+      // Sincronizar vehículos cargados inicialmente con el estado externo
+      if (vehicles.length > 0 && typeof onAddVehicle === 'function') {
+        console.log('[VehicleForm] Sincronizando vehículos iniciales con estado global:', vehicles.length);
+        
+        // Evitar actualizar si ya existen en el estado externo
+        const vehiclesToSync = vehicles.filter(vehicle => 
+          !externalVehicles || !externalVehicles.some(v => v.id === vehicle.id)
+        );
+        
+        // Añadir cada vehículo al estado externo
+        vehiclesToSync.forEach(vehicle => {
+          onAddVehicle(vehicle);
+        });
+      }
+      
+      // Detectar posibles duplicados (mismos IDs en ambos arrays)
+      if (externalVehicles?.length > 0) {
+        const externalIds = externalVehicles.map(v => v.id);
+        const hookIds = vehicles.map(v => v.id);
+        const duplicatedIds = externalIds.filter(id => hookIds.includes(id));
+        
+        if (duplicatedIds.length > 0) {
+          console.log('[VehicleForm] ⚠️ IDs duplicados encontrados:', duplicatedIds);
+          console.log('[VehicleForm] Vehículos externos con estos IDs:', 
+            externalVehicles.filter(v => duplicatedIds.includes(v.id)));
+          console.log('[VehicleForm] Vehículos internos con estos IDs:', 
+            vehicles.filter(v => duplicatedIds.includes(v.id)));
+        }
       }
       
       initialCheckDoneRef.current = true; // Marcar como ejecutado
     }
-  }, [externalVehicles, vehicles]);
+  }, [externalVehicles, vehicles, onAddVehicle]);
   
   // Comprueba si el modal informativo ya se mostró para esta sesión
   const checkIfModalShown = () => {
