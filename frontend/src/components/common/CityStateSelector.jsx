@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
 import mexicanStatesAndCities from './MexicanStatesData';
 
@@ -14,7 +14,7 @@ import mexicanStatesAndCities from './MexicanStatesData';
  * @param {boolean} props.required - Whether the fields are required
  * @param {string} props.className - Additional CSS classes
  */
-const CityStateSelector = ({
+const CityStateSelector = memo(({
   selectedState = '',
   selectedCity = '',
   onChange,
@@ -26,42 +26,75 @@ const CityStateSelector = ({
   const [availableCities, setAvailableCities] = useState([]);
   const [state, setState] = useState(selectedState);
   const [city, setCity] = useState(selectedCity);
-
-  // Update available cities when state changes
+  
+  // Initialize component with the initial values (runs only once)
   useEffect(() => {
-    if (state) {
-      const stateData = mexicanStatesAndCities.find(s => s.state === state);
+    setState(selectedState);
+    setCity(selectedCity);
+    
+    // Initial setup of available cities based on the selected state
+    if (selectedState) {
+      const stateData = mexicanStatesAndCities.find(s => s.state === selectedState);
+      if (stateData) {
+        setAvailableCities(stateData.cities);
+      }
+    }
+  }, []); // Empty dependency array - runs only once on mount
+  
+  // Handler for state change
+  const handleStateChange = useCallback((newState) => {
+    setState(newState);
+    
+    // Update available cities when state changes
+    if (newState) {
+      const stateData = mexicanStatesAndCities.find(s => s.state === newState);
       if (stateData) {
         setAvailableCities(stateData.cities);
         
         // If current city isn't in the list of cities for the new state, reset it
         if (city && !stateData.cities.includes(city)) {
           setCity('');
-          if (onChange) {
-            onChange({ state, city: '' });
-          }
         }
       } else {
         setAvailableCities([]);
       }
     } else {
       setAvailableCities([]);
+      setCity('');
     }
-  }, [state]);
-
-  // Update parent component when selections change
-  useEffect(() => {
-    if (onChange && (state !== selectedState || city !== selectedCity)) {
-      onChange({ state, city });
+    
+    // Notify parent about the state change
+    if (onChange) {
+      onChange({ state: newState, city: '' });
     }
-  }, [state, city]);
-
-  // Update local state when props change (for controlled component)
+  }, [city, onChange]);
+  
+  // Handler for city change
+  const handleCityChange = useCallback((newCity) => {
+    setCity(newCity);
+    
+    // Notify parent about the city change
+    if (onChange) {
+      onChange({ state, city: newCity });
+    }
+  }, [state, onChange]);
+  
+  // Sync with parent props when they change
   useEffect(() => {
-    if (selectedState !== state) {
+    // Only update if props actually changed and are different from internal state
+    if (selectedState !== '' && selectedState !== state) {
       setState(selectedState);
+      
+      // Update available cities
+      const stateData = mexicanStatesAndCities.find(s => s.state === selectedState);
+      if (stateData) {
+        setAvailableCities(stateData.cities);
+      } else {
+        setAvailableCities([]);
+      }
     }
-    if (selectedCity !== city) {
+    
+    if (selectedCity !== '' && selectedCity !== city) {
       setCity(selectedCity);
     }
   }, [selectedState, selectedCity]);
@@ -86,7 +119,7 @@ const CityStateSelector = ({
           id="state-selector"
           name="state"
           value={state}
-          onChange={(e) => setState(e.target.value)}
+          onChange={(e) => handleStateChange(e.target.value)}
           className="govuk-input"
           required={required}
         >
@@ -107,7 +140,7 @@ const CityStateSelector = ({
           id="city-selector"
           name="city"
           value={city}
-          onChange={(e) => setCity(e.target.value)}
+          onChange={(e) => handleCityChange(e.target.value)}
           className="govuk-input"
           required={required}
           disabled={!state}
@@ -124,6 +157,6 @@ const CityStateSelector = ({
       </motion.div>
     </div>
   );
-};
+});
 
 export default CityStateSelector;

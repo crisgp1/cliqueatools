@@ -1,14 +1,32 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { IoDocumentOutline, IoPrintOutline, IoSaveOutline, IoInformationCircleOutline, IoWarningOutline } from 'react-icons/io5';
 import Modal from './Modal';
 import CityStateSelector from '../components/common/CityStateSelector';
 
 const ContractForm = ({ vehicles = [], client = {} }) => {
+  // Verificación de IDs duplicados en vehículos
+  useEffect(() => {
+    if (vehicles && vehicles.length > 0) {
+      // Crear un objeto para contar las ocurrencias de cada ID
+      const idCounts = {};
+      vehicles.forEach(vehicle => {
+        if (vehicle.id) {
+          idCounts[vehicle.id] = (idCounts[vehicle.id] || 0) + 1;
+        }
+      });
+      
+      // Filtrar los IDs que aparecen más de una vez
+      const duplicatedIds = Object.keys(idCounts).filter(id => idCounts[id] > 1);
+      
+      if (duplicatedIds.length > 0) {
+        console.warn("[VehicleForm] ⚠️ IDs duplicados encontrados:", duplicatedIds);
+      }
+    }
+  }, [vehicles]);
   const currentDate = new Date();
   const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
   const formattedTime = `${currentDate.getHours().toString().padStart(2, '0')}:${currentDate.getMinutes().toString().padStart(2, '0')}`;
-
   const [contractData, setContractData] = useState({
     // Información general
     ciudad: '',
@@ -73,7 +91,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   };
 
   // Manejar cambios en los campos
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
 
     if (name === 'precioTotal') {
@@ -91,7 +109,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
         [name]: value
       });
     }
-  };
+  }, []);
 
   // Lista de identificaciones comunes en México
   const identificacionesComunes = [
@@ -106,14 +124,21 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   ];
 
   // Seleccionar identificación del modal
-  const handleSelectIdentification = (identificacion) => {
-    setContractData({
-      ...contractData,
+  const handleSelectIdentification = useCallback((identificacion) => {
+    setContractData(prevData => ({
+      ...prevData,
       identificacionComprador: identificacion
-    });
+    }));
     setShowIdCopyModal(false);
-  };
-
+  }, []);
+  // Manejador para los cambios de ubicación (estado/ciudad)
+  const handleLocationChange = useCallback(({ state, city }) => {
+    setContractData(prevData => ({
+      ...prevData,
+      estado: state,
+      ciudad: city
+    }));
+  }, []);
   // Mostrar modal de recordatorio de copia de ID
   const showIdCopyReminder = () => {
     if (!idModalShown) {
@@ -857,13 +882,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
             <CityStateSelector 
               selectedState={contractData.estado}
               selectedCity={contractData.ciudad}
-              onChange={({ state, city }) => {
-                setContractData({
-                  ...contractData,
-                  estado: state,
-                  ciudad: city
-                });
-              }}
+              onChange={handleLocationChange}
               stateLabel="Estado"
               cityLabel="Ciudad"
               required={true}

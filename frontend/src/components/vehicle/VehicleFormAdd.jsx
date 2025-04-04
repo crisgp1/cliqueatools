@@ -258,16 +258,6 @@ const VehicleFormAdd = ({ onSubmit, loading = false }) => {
             <span>$3,000,000</span>
           </div>
           
-          <input
-            type="range"
-            min="50000"
-            max="3000000"
-            step="10000"
-            value={newVehicle.valor || 300000}
-            onChange={(e) => handleVehicleChange({ target: { name: 'valor', value: e.target.value } })}
-            className="govuk-slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-          />
-          
           <div className="text-base text-gray-800 mt-2 text-right">
             <span className="font-bold">{formatCurrency(newVehicle.valor || 0)}</span>
           </div>
