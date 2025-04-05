@@ -13,7 +13,7 @@ const PORT = process.env.PORT;
 // Middleware
 // Configuración de CORS para permitir solicitudes desde el frontend
 app.use(cors({
-  origin: '*',
+  origin: ['https://cliqueatools.onrender.com', 'http://localhost:3000', 'http://localhost:5173'],
   credentials: true, // Permitir credenciales (cookies, headers authorization, etc)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
   allowedHeaders: ['Content-Type', 'Authorization'] // Headers permitidos
@@ -29,6 +29,18 @@ if (process.env.NODE_ENV === 'development') {
 
 // Servir archivos estáticos si es necesario
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Middleware para redirigir solicitudes sin el prefijo /api
+app.use((req, res, next) => {
+  // Solo procesar solicitudes que no empiecen con /api
+  if (!req.path.startsWith('/api') && req.path !== '/uploads' && !req.path.startsWith('/uploads/')) {
+    // Crear una nueva ruta con el prefijo /api
+    const newPath = `/api${req.path}`;
+    console.log(`Redirigiendo solicitud de ${req.path} a ${newPath}`);
+    req.url = newPath;
+  }
+  next();
+});
 
 // Rutas
 app.use(routes);

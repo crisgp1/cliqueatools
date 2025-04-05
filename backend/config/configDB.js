@@ -13,11 +13,11 @@ const sequelize = new Sequelize(
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     // SSL configuración - requerido para Render y otros proveedores cloud
-    // Por defecto habilitamos SSL para entornos de producción/nube como Render
+    // Usamos variables de entorno o valores seguros por defecto
     dialectOptions: {
       ssl: {
-        require: true,
-        rejectUnauthorized: false // necesario en algunos casos cuando el certificado no es confiable
+        require: process.env.DB_SSL === 'true' || true, // Habilitado por defecto
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' || false // Deshabilitado por defecto para mayor compatibilidad
       }
     },
     define: {
