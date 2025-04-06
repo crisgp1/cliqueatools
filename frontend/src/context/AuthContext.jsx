@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ usuario, password }),
+        credentials: 'include', // Añadir credentials para enviar cookies y headers de autorización
       });
 
       const data = await response.json();

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-import CityStateSelector from '../../common/CityStateSelector';
+import ZipCodeSelector from '../../common/ZipCodeSelector';
 
 /**
  * General Information section of the contract form
@@ -13,7 +13,7 @@ import CityStateSelector from '../../common/CityStateSelector';
 const GeneralInfoSection = memo(({ 
   formData, 
   handleChange, 
-  handleLocationChange 
+  handleLocationChange
 }) => {
   // Animation variants
   const itemAnimation = {
@@ -25,24 +25,58 @@ const GeneralInfoSection = memo(({
     }
   };
 
+  // Función para manejar cambios en la ubicación incluyendo código postal y colonia
+  const handleLocationComplete = (locationData) => {
+    // Usar la función handleLocationChange existente y agregar los campos adicionales si es necesario
+    handleLocationChange({
+      state: locationData.state || formData.estado,
+      city: locationData.city || formData.ciudad,
+      // Incluir nuevos campos
+      colony: locationData.colony,
+      zipCode: locationData.zipCode
+    });
+    
+    // Si hay un cambio de código postal también actualizar ese campo directamente
+    if (locationData.zipCode && handleChange) {
+      const event = { 
+        target: { 
+          name: 'codigoPostal', 
+          value: locationData.zipCode 
+        } 
+      };
+      handleChange(event);
+    }
+    
+    // Si hay un cambio de colonia también actualizar ese campo directamente
+    if (locationData.colony && handleChange) {
+      const event = { 
+        target: { 
+          name: 'colonia', 
+          value: locationData.colony 
+        } 
+      };
+      handleChange(event);
+    }
+  };
+
   return (
     <div className="govuk-form-section">
       <h3 className="govuk-form-section-title">Información General</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* City and State Selector */}
-        <motion.div className="govuk-form-group md:col-span-2" variants={itemAnimation}>
-          <CityStateSelector 
+      <div className="grid grid-cols-1 gap-4">
+        {/* Zip Code, Colony, City and State Selector */}
+        <motion.div className="govuk-form-group" variants={itemAnimation}>
+          <ZipCodeSelector 
             selectedState={formData.estado}
             selectedCity={formData.ciudad}
-            onChange={handleLocationChange}
-            stateLabel="Estado"
-            cityLabel="Ciudad"
+            selectedColony={formData.colonia || ''}
+            zipCode={formData.codigoPostal || ''}
+            onChange={handleLocationComplete}
             required={true}
           />
         </motion.div>
 
         {/* Date */}
-        <motion.div className="govuk-form-group" variants={itemAnimation}>
+        <motion.div className="govuk-form-group mt-4" variants={itemAnimation}>
           <label htmlFor="fecha" className="govuk-label">
             Fecha <span className="text-royal-red">*</span>
           </label>

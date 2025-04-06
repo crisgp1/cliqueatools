@@ -71,7 +71,7 @@ const ContractPreview = memo(({
         <h2 className="text-center text-xl font-bold text-blue-800 mb-4">Contrato de Compraventa de Vehículo</h2>
 
         <p className="mb-4">
-          En la ciudad de <strong>{contractData.ciudad}</strong> siendo el día <strong>{contractData.fecha}</strong> y la hora <strong>{contractData.hora}</strong>
+          En la ciudad de <strong>{contractData.ciudad}</strong>, {contractData.estado && <><strong>{contractData.estado}</strong>,</>} siendo el día <strong>{contractData.fecha}</strong> y la hora <strong>{contractData.hora}</strong>
         </p>
 
         <div className="mb-6 border-b pb-4">
@@ -89,7 +89,11 @@ const ContractPreview = memo(({
           <h3 className="text-lg font-bold text-blue-800 mb-2">Datos del Comprador</h3>
           <p>
             Nombre: <strong>{contractData.nombreComprador}</strong><br />
-            Domicilio: <strong>{contractData.domicilioComprador}</strong><br />
+            Domicilio: <strong>{contractData.domicilioComprador}</strong>
+            {contractData.colonia && <>, Col. <strong>{contractData.colonia}</strong></>}
+            {contractData.ciudad && <>, <strong>{contractData.ciudad}</strong></>}
+            {contractData.estado && <>, <strong>{contractData.estado}</strong></>}
+            {contractData.codigoPostal && <>, C.P. <strong>{contractData.codigoPostal}</strong></>}<br />
             Teléfono: <strong>{contractData.telefonoComprador}</strong><br />
             Correo: <strong>{contractData.emailComprador}</strong><br />
             Identificación: <strong>{contractData.identificacionComprador}</strong> No. <strong>{contractData.numeroIdentificacion}</strong>

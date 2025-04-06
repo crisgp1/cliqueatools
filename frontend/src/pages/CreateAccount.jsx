@@ -66,6 +66,7 @@ const CreateAccount = ({ onLoginClick }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(dataToSend),
+        credentials: 'include', // Añadir credentials para enviar cookies y headers de autorización
       });
 
       const data = await response.json();
