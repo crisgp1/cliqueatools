@@ -1,7 +1,9 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { IoInformationCircleOutline, IoWarningOutline } from 'react-icons/io5';
+import { IoInformationCircleOutline } from 'react-icons/io5';
 import { identificacionesComunes } from '../utils/ContractUtils';
+import { ErrorMessage, addErrorClass } from '../utils/ErrorSummary';
+import { validateMexicanField } from '../utils/ValidationSchema';
 
 /**
  * Buyer Information section of the contract form
@@ -13,6 +15,7 @@ import { identificacionesComunes } from '../utils/ContractUtils';
  * @param {Function} props.setIdModalShown - Function to set ID modal shown state
  * @param {Function} props.setShowIdCopyModal - Function to show ID copy modal
  * @param {Function} props.setShowAddressProofModal - Function to show address proof modal
+ * @param {Object} props.errors - Field-specific error messages
  */
 const BuyerInfoSection = memo(({ 
   formData, 
@@ -20,7 +23,8 @@ const BuyerInfoSection = memo(({
   idModalShown,
   setIdModalShown,
   setShowIdCopyModal,
-  setShowAddressProofModal
+  setShowAddressProofModal,
+  errors = {}
 }) => {
   // Animation variants
   const itemAnimation = {
@@ -31,7 +35,84 @@ const BuyerInfoSection = memo(({
       transition: { type: "spring", stiffness: 400, damping: 20 }
     }
   };
+  // Estado local para validación en tiempo real
+  const [idValidation, setIdValidation] = useState({
+    isValid: true,
+    idType: '',
+    message: ''
+  });
 
+  // Validar el número de identificación según el tipo seleccionado
+  const validateIdentification = (value, type) => {
+    // Si no hay valor o tipo, no validamos
+    if (!value || !type) return { isValid: true, message: '' };
+
+    let validationType = '';
+    
+    // Detectar tipo de identificación basado en el tipo seleccionado
+    if (type.toLowerCase().includes('rfc')) {
+      validationType = 'RFC';
+    } else if (type.toLowerCase().includes('curp')) {
+      validationType = 'CURP';
+    } else if (type.toLowerCase().includes('ine') || type.toLowerCase().includes('elector')) {
+      validationType = 'INE_CLAVE';
+      
+      // Verificar si parece ser un OCR (solo dígitos)
+      if (/^\d+$/.test(value) && value.length === 13) {
+        validationType = 'INE_OCR';
+      }
+    }
+    
+    // Si no tenemos un tipo específico para validar, no mostramos error
+    if (!validationType) return { isValid: true, message: '' };
+    
+    // Validar según el tipo detectado
+    const isValid = validateMexicanField(value, validationType);
+    
+    let message = '';
+    if (!isValid) {
+      switch (validationType) {
+        case 'RFC':
+          message = 'El RFC debe tener formato ABCD123456XXX para personas físicas o ABC123456XXX para morales';
+          break;
+        case 'CURP':
+          message = 'La CURP debe tener 18 caracteres con el formato correcto';
+          break;
+        case 'INE_CLAVE':
+          message = 'La clave de elector debe tener 18 caracteres alfanuméricos';
+          break;
+        case 'INE_OCR':
+          message = 'El OCR debe tener 13 dígitos numéricos';
+          break;
+      }
+    }
+    
+    return { isValid, message, idType: validationType };
+  };
+
+  // Manejar cambio en el campo de número de identificación
+  const handleIdentificationChange = (e) => {
+    const { value } = e.target;
+    handleChange(e);
+    
+    // Validar identificación en tiempo real
+    const result = validateIdentification(value, formData.identificacionComprador);
+    setIdValidation(result);
+  };
+
+  // Manejar cambio en el tipo de identificación
+  const handleIdTypeChange = (e) => {
+    handleChange(e);
+    
+    // Volver a validar el número con el nuevo tipo
+    if (formData.numeroIdentificacion) {
+      const result = validateIdentification(
+        formData.numeroIdentificacion,
+        e.target.value
+      );
+      setIdValidation(result);
+    }
+  };
   // Mostrar modal de recordatorio de copia de ID
   const showIdCopyReminder = () => {
     if (!idModalShown) {
@@ -91,82 +172,87 @@ const BuyerInfoSection = memo(({
       <h3 className="govuk-form-section-title">Información del Comprador</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Buyer Name */}
-        <motion.div className="govuk-form-group" variants={itemAnimation}>
+        <motion.div className={`govuk-form-group ${errors.nombreComprador ? 'govuk-form-group--error' : ''}`} variants={itemAnimation}>
           <label htmlFor="nombreComprador" className="govuk-label">
             Nombre o Razón Social <span className="text-royal-red">*</span>
           </label>
+          <ErrorMessage message={errors.nombreComprador} />
           <input
             type="text"
             id="nombreComprador"
             name="nombreComprador"
             value={formData.nombreComprador}
             onChange={handleChange}
-            className="govuk-input"
+            className={addErrorClass("govuk-input", errors.nombreComprador)}
             required
           />
         </motion.div>
 
         {/* Buyer Address */}
-        <motion.div className="govuk-form-group" variants={itemAnimation}>
+        <motion.div className={`govuk-form-group ${errors.domicilioComprador ? 'govuk-form-group--error' : ''}`} variants={itemAnimation}>
           <label htmlFor="domicilioComprador" className="govuk-label">
             Domicilio <span className="text-royal-red">*</span>
           </label>
+          <ErrorMessage message={errors.domicilioComprador} />
           <input
             type="text"
             id="domicilioComprador"
             name="domicilioComprador"
             value={formData.domicilioComprador}
             onChange={handleChange}
-            className="govuk-input"
+            className={addErrorClass("govuk-input", errors.domicilioComprador)}
             required
           />
         </motion.div>
 
         {/* Buyer Phone */}
-        <motion.div className="govuk-form-group" variants={itemAnimation}>
+        <motion.div className={`govuk-form-group ${errors.telefonoComprador ? 'govuk-form-group--error' : ''}`} variants={itemAnimation}>
           <label htmlFor="telefonoComprador" className="govuk-label">
             Teléfono <span className="text-royal-red">*</span>
           </label>
+          <ErrorMessage message={errors.telefonoComprador} />
           <input
             type="text"
             id="telefonoComprador"
             name="telefonoComprador"
             value={formData.telefonoComprador}
             onChange={handleChange}
-            className="govuk-input"
+            className={addErrorClass("govuk-input", errors.telefonoComprador)}
             required
           />
         </motion.div>
 
         {/* Buyer Email */}
-        <motion.div className="govuk-form-group" variants={itemAnimation}>
+        <motion.div className={`govuk-form-group ${errors.emailComprador ? 'govuk-form-group--error' : ''}`} variants={itemAnimation}>
           <label htmlFor="emailComprador" className="govuk-label">
             Correo Electrónico
           </label>
+          <ErrorMessage message={errors.emailComprador} />
           <input
             type="email"
             id="emailComprador"
             name="emailComprador"
             value={formData.emailComprador}
             onChange={handleChange}
-            className="govuk-input"
+            className={addErrorClass("govuk-input", errors.emailComprador)}
           />
         </motion.div>
 
         {/* Buyer ID Type */}
-        <motion.div className="govuk-form-group" variants={itemAnimation}>
+        <motion.div className={`govuk-form-group ${errors.identificacionComprador ? 'govuk-form-group--error' : ''}`} variants={itemAnimation}>
           <label htmlFor="identificacionComprador" className="govuk-label">
             Tipo de Identificación <span className="text-royal-red">*</span>
           </label>
+          <ErrorMessage message={errors.identificacionComprador} />
           <div className="flex items-center">
             <input
               type="text"
               id="identificacionComprador"
               name="identificacionComprador"
               value={formData.identificacionComprador}
-              onChange={handleChange}
-              className="govuk-input w-full"
-              placeholder="INE, Pasaporte, etc."
+              onChange={handleIdTypeChange}
+              className={addErrorClass("govuk-input w-full", errors.identificacionComprador)}
+              placeholder="INE, Pasaporte, RFC, CURP, etc."
               required
             />
             <button 
@@ -181,19 +267,28 @@ const BuyerInfoSection = memo(({
         </motion.div>
 
         {/* Buyer ID Number */}
-        <motion.div className="govuk-form-group" variants={itemAnimation}>
+        <motion.div 
+          className={`govuk-form-group ${errors.numeroIdentificacion || !idValidation.isValid ? 'govuk-form-group--error' : ''}`} 
+          variants={itemAnimation}
+        >
           <label htmlFor="numeroIdentificacion" className="govuk-label">
             Número de Identificación <span className="text-royal-red">*</span>
           </label>
+          <ErrorMessage message={errors.numeroIdentificacion || (!idValidation.isValid ? idValidation.message : '')} />
           <input
             type="text"
             id="numeroIdentificacion"
             name="numeroIdentificacion"
             value={formData.numeroIdentificacion}
-            onChange={handleChange}
-            className="govuk-input"
+            onChange={handleIdentificationChange}
+            className={addErrorClass("govuk-input", errors.numeroIdentificacion || !idValidation.isValid)}
             required
           />
+          {idValidation.idType && idValidation.isValid && (
+            <div className="text-sm text-green-600 mt-1">
+              ✓ Formato de {idValidation.idType.replace('_', ' ')} válido
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

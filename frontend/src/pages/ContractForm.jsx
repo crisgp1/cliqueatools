@@ -3,6 +3,10 @@ import { motion } from 'framer-motion';
 import { IoDocumentOutline, IoPrintOutline, IoSaveOutline } from 'react-icons/io5';
 import Modal from './Modal';
 
+// Import validation schema and error components
+import { validateContractData } from '../components/contract/utils/ValidationSchema';
+import ErrorSummary from '../components/contract/utils/ErrorSummary';
+
 // Import modular components
 import GeneralInfoSection from '../components/contract/form/GeneralInfoSection';
 import BuyerInfoSection from '../components/contract/form/BuyerInfoSection';
@@ -86,6 +90,9 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   const [showIdCopyModal, setShowIdCopyModal] = useState(false);
   const [showAddressProofModal, setShowAddressProofModal] = useState(false);
   const [idModalShown, setIdModalShown] = useState(false);
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [showValidationError, setShowValidationError] = useState(false);
   
   // Signature state
   const [signatures, setSignatures] = useState({
@@ -128,9 +135,23 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     }));
   }, []);
 
-  // Toggle between form and preview modes
+  // Toggle between form and preview modes with validation
   const togglePreview = () => {
+    if (!showPreview) {
+      // Validar datos antes de mostrar la vista previa
+      const { isValid, errors, fieldErrors } = validateContractData(contractData);
+      if (!isValid) {
+        setValidationErrors(errors);
+        setFieldErrors(fieldErrors);
+        setShowValidationError(true);
+        // Desplazarse al principio del formulario para ver los errores
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+    // Si está en vista previa o si pasó la validación
     setShowPreview(!showPreview);
+    setShowValidationError(false);
   };
 
   // Seleccionar identificación del modal
@@ -178,11 +199,17 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           animate="visible"
           variants={formAnimation}
         >
+          {/* Gov.uk Style Error Summary */}
+          <ErrorSummary 
+            errors={fieldErrors} 
+            visible={showValidationError} 
+          />
           {/* General Information Section */}
           <GeneralInfoSection 
             formData={contractData}
             handleChange={handleChange}
             handleLocationChange={handleLocationChange}
+            errors={fieldErrors}
           />
 
           {/* Buyer Information Section */}
@@ -193,24 +220,28 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
             setIdModalShown={setIdModalShown}
             setShowIdCopyModal={setShowIdCopyModal}
             setShowAddressProofModal={setShowAddressProofModal}
+            errors={fieldErrors}
           />
 
           {/* Vehicle Information Section */}
           <VehicleInfoSection 
             formData={contractData}
             handleChange={handleChange}
+            errors={fieldErrors}
           />
 
           {/* Payment Information Section */}
           <PaymentInfoSection 
             formData={contractData}
             handleChange={handleChange}
+            errors={fieldErrors}
           />
 
           {/* Observations Section */}
           <ObservationsSection 
             formData={contractData}
             handleChange={handleChange}
+            errors={fieldErrors}
           />
 
           {/* Signatures Section */}
