@@ -71,6 +71,10 @@ const CreateAccount = ({ onLoginClick }) => {
       const data = await response.json();
       
       if (!response.ok) {
+        // Mensaje específico si el usuario ya existe
+        if (data.mensaje && data.mensaje.includes('ya existe')) {
+          throw new Error('Este nombre de usuario ya existe. Por favor, elija otro nombre de usuario.');
+        }
         throw new Error(data.mensaje || 'Error al registrar usuario');
       }
 

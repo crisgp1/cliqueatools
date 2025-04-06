@@ -12,7 +12,13 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT,
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    // Eliminada configuración SSL para conexión local
+    // Configuración SSL para conexión remota
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false // Permite certificados auto-firmados o no verificables
+      }
+    },
     define: {
       timestamps: true, // Por defecto agrega createdAt y updatedAt
       underscored: true, // snake_case para nombres de columnas

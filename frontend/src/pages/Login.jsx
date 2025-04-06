@@ -73,8 +73,23 @@ const Login = ({ onCreateAccountClick }) => {
         // El preloader se cerrará automáticamente después de la animación (ver useEffect)
       } else {
         setAnimationState('error');
-        setStatusMessage('Error de acceso');
-        setError(result.error || 'Credenciales inválidas');
+        
+        // Mensajes específicos según el tipo de error
+        if (result.error) {
+          if (result.error.toLowerCase().includes('no encontrado')) {
+            setStatusMessage('Usuario no encontrado');
+            setError('El usuario ingresado no existe en el sistema');
+          } else if (result.error.toLowerCase().includes('contraseña') || result.error.toLowerCase().includes('credenciales')) {
+            setStatusMessage('Contraseña incorrecta');
+            setError('La contraseña ingresada es incorrecta');
+          } else {
+            setStatusMessage('Error de acceso');
+            setError(result.error);
+          }
+        } else {
+          setStatusMessage('Error de acceso');
+          setError('Credenciales inválidas');
+        }
         
         // Cerrar el preloader de error después de un tiempo
         setTimeout(() => {
