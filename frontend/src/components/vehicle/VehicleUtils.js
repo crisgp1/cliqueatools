@@ -91,6 +91,14 @@ export const createEmptyVehicle = () => {
     modelo: '',
     año: getCurrentYear(),
     valor: '',
-    descripcion: ''
+    descripcion: '',
+    color: '',
+    tipo: '',
+    numero_motor: '',
+    numero_serie: '',
+    placas: '',
+    numero_circulacion: '',
+    numero_factura: '',
+    refrendos: ''
   };
 };

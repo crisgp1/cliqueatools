@@ -262,6 +262,153 @@ const VehicleFormAdd = ({ onSubmit, loading = false }) => {
             <span className="font-bold">{formatCurrency(newVehicle.valor || 0)}</span>
           </div>
         </motion.div>
+
+        {/* Nuevos campos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Color */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="color" className="govuk-label">
+              Color <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="color"
+              name="color"
+              value={newVehicle.color}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.color ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.color && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.color}</p>
+            )}
+          </motion.div>
+          
+          {/* Tipo */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="tipo" className="govuk-label">
+              Tipo <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="tipo"
+              name="tipo"
+              value={newVehicle.tipo}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.tipo ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.tipo && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.tipo}</p>
+            )}
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Número de Motor */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="numero_motor" className="govuk-label">
+              Número de Motor <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="numero_motor"
+              name="numero_motor"
+              value={newVehicle.numero_motor}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.numero_motor ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.numero_motor && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.numero_motor}</p>
+            )}
+          </motion.div>
+          
+          {/* Número de Serie */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="numero_serie" className="govuk-label">
+              Número de Serie <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="numero_serie"
+              name="numero_serie"
+              value={newVehicle.numero_serie}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.numero_serie ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.numero_serie && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.numero_serie}</p>
+            )}
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Placas */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="placas" className="govuk-label">
+              Placas <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="placas"
+              name="placas"
+              value={newVehicle.placas}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.placas ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.placas && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.placas}</p>
+            )}
+          </motion.div>
+          
+          {/* Número de Circulación */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="numero_circulacion" className="govuk-label">
+              No. T. Circulación (Si aplica)
+            </label>
+            <input
+              type="text"
+              id="numero_circulacion"
+              name="numero_circulacion"
+              value={newVehicle.numero_circulacion}
+              onChange={handleVehicleChange}
+              className="govuk-input"
+            />
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Número de Factura */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="numero_factura" className="govuk-label">
+              No. Factura <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="numero_factura"
+              name="numero_factura"
+              value={newVehicle.numero_factura}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.numero_factura ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.numero_factura && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.numero_factura}</p>
+            )}
+          </motion.div>
+          
+          {/* Refrendos */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="refrendos" className="govuk-label">
+              Refrendos
+            </label>
+            <input
+              type="text"
+              id="refrendos"
+              name="refrendos"
+              value={newVehicle.refrendos}
+              onChange={handleVehicleChange}
+              className="govuk-input"
+            />
+          </motion.div>
+        </div>
         
         <div className="flex justify-end mt-4">
           <motion.button
