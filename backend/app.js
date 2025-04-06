@@ -13,7 +13,7 @@ const PORT = process.env.PORT;
 // Middleware
 // Configuración de CORS para permitir solicitudes desde el frontend
 app.use(cors({
-  origin: ['https://cliqueatools.onrender.com', 'http://localhost:3000', 'http://localhost:5173'],
+  origin: '*',
   credentials: true, // Permitir credenciales (cookies, headers authorization, etc)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
   allowedHeaders: ['Content-Type', 'Authorization'] // Headers permitidos

@@ -11,7 +11,7 @@ export default defineConfig(({ command, mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.VITE_API_URL.replace('/api', ''), // Evitar duplicación de /api
+          target: env.VITE_API_URL ? env.VITE_API_URL.replace('/api', '') : 'http://localhost:3000', // Fallback to localhost if not defined
           changeOrigin: true,
           secure: false,
           ws: true
