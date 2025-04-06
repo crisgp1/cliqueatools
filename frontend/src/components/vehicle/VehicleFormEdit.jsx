@@ -266,6 +266,153 @@ const VehicleFormEdit = ({ vehicle, onSubmit, onCancel, loading = false }) => {
             <span className="font-bold">{formatCurrency(editingVehicle.valor || 0)}</span>
           </div>
         </motion.div>
+
+        {/* Nuevos campos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Color */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="edit-color" className="govuk-label">
+              Color <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit-color"
+              name="color"
+              value={editingVehicle.color || ''}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.color ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.color && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.color}</p>
+            )}
+          </motion.div>
+          
+          {/* Tipo */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="edit-tipo" className="govuk-label">
+              Tipo <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit-tipo"
+              name="tipo"
+              value={editingVehicle.tipo || ''}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.tipo ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.tipo && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.tipo}</p>
+            )}
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Número de Motor */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="edit-numero_motor" className="govuk-label">
+              Número de Motor <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit-numero_motor"
+              name="numero_motor"
+              value={editingVehicle.numero_motor || ''}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.numero_motor ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.numero_motor && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.numero_motor}</p>
+            )}
+          </motion.div>
+          
+          {/* Número de Serie */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="edit-numero_serie" className="govuk-label">
+              Número de Serie <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit-numero_serie"
+              name="numero_serie"
+              value={editingVehicle.numero_serie || ''}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.numero_serie ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.numero_serie && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.numero_serie}</p>
+            )}
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Placas */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="edit-placas" className="govuk-label">
+              Placas <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit-placas"
+              name="placas"
+              value={editingVehicle.placas || ''}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.placas ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.placas && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.placas}</p>
+            )}
+          </motion.div>
+          
+          {/* Número de Circulación */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="edit-numero_circulacion" className="govuk-label">
+              No. T. Circulación (Si aplica)
+            </label>
+            <input
+              type="text"
+              id="edit-numero_circulacion"
+              name="numero_circulacion"
+              value={editingVehicle.numero_circulacion || ''}
+              onChange={handleVehicleChange}
+              className="govuk-input"
+            />
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Número de Factura */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="edit-numero_factura" className="govuk-label">
+              No. Factura <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit-numero_factura"
+              name="numero_factura"
+              value={editingVehicle.numero_factura || ''}
+              onChange={handleVehicleChange}
+              className={`govuk-input ${validationErrors.numero_factura ? 'border-red-500' : ''}`}
+            />
+            {validationErrors.numero_factura && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.numero_factura}</p>
+            )}
+          </motion.div>
+          
+          {/* Refrendos */}
+          <motion.div className="govuk-form-group" variants={itemAnimation}>
+            <label htmlFor="edit-refrendos" className="govuk-label">
+              Refrendos
+            </label>
+            <input
+              type="text"
+              id="edit-refrendos"
+              name="refrendos"
+              value={editingVehicle.refrendos || ''}
+              onChange={handleVehicleChange}
+              className="govuk-input"
+            />
+          </motion.div>
+        </div>
         
         <div className="flex justify-between mt-4">
           <motion.button

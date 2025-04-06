@@ -30,6 +30,18 @@ if (process.env.NODE_ENV === 'development') {
 // Servir archivos estáticos si es necesario
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Middleware para redirigir solicitudes sin el prefijo /api
+app.use((req, res, next) => {
+  // Solo procesar solicitudes que no empiecen con /api
+  if (!req.path.startsWith('/api') && req.path !== '/uploads' && !req.path.startsWith('/uploads/')) {
+    // Crear una nueva ruta con el prefijo /api
+    const newPath = `/api${req.path}`;
+    console.log(`Redirigiendo solicitud de ${req.path} a ${newPath}`);
+    req.url = newPath;
+  }
+  next();
+});
+
 // Rutas
 app.use(routes);
 

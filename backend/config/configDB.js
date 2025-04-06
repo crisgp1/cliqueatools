@@ -12,11 +12,12 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT,
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    // Configuración SSL para conexión remota
+    // SSL configuración - requerido para Render y otros proveedores cloud
+    // Usamos variables de entorno o valores seguros por defecto
     dialectOptions: {
       ssl: {
-        require: true,
-        rejectUnauthorized: false // Permite certificados auto-firmados o no verificables
+        require: process.env.DB_SSL === 'true' || true, // Habilitado por defecto
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' || false // Deshabilitado por defecto para mayor compatibilidad
       }
     },
     define: {
