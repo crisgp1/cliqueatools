@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  IoCalendarOutline, 
+  IoPersonOutline, 
   IoPencilOutline, 
   IoTrashOutline, 
   IoSearchOutline,
@@ -9,11 +9,10 @@ import {
   IoListOutline,
   IoChevronBackOutline,
   IoChevronForwardOutline,
-  IoFilterOutline,
   IoCloseCircleOutline,
-  IoTimeOutline,
-  IoPersonOutline,
-  IoCarSportOutline,
+  IoMailOutline,
+  IoCallOutline,
+  IoIdCardOutline,
   IoLocationOutline,
   IoEyeOutline,
   IoCheckmarkCircleOutline,
@@ -21,90 +20,66 @@ import {
 } from 'react-icons/io5';
 
 /**
- * Componente mejorado que muestra la lista de citas con opciones para editar y eliminar
- *
+ * Componente mejorado que muestra la lista de clientes con opciones para editar y eliminar
+ * 
  * @param {Object} props - Propiedades del componente
- * @param {Array} props.appointments - Lista de citas a mostrar
+ * @param {Array} props.clients - Lista de clientes a mostrar
  * @param {boolean} props.loading - Indica si está cargando datos
- * @param {Function} props.onEdit - Función a llamar al hacer clic en editar cita
- * @param {Function} props.onDelete - Función a llamar al hacer clic en eliminar cita
+ * @param {Function} props.onEdit - Función a llamar al hacer clic en editar cliente
+ * @param {Function} props.onDelete - Función a llamar al hacer clic en eliminar cliente
  * @param {Function} props.onView - Función a llamar al hacer clic en ver detalles
  * @returns {JSX.Element}
  */
-const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete, onView }) => {
+const ClientList = ({ clients = [], loading = false, onEdit, onDelete, onView }) => {
   // Estado para búsqueda y filtrado
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'table' o 'grid'
-  const [filterDate, setFilterDate] = useState('');
   
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Ajustar según necesidad
+  const itemsPerPage = 9; // Ajustar según necesidad
   
-  // Filtrar citas basado en término de búsqueda y fecha
-  const filteredAppointments = useMemo(() => {
-    let filtered = appointments;
+  // Filtrar clientes basado en término de búsqueda
+  const filteredClients = useMemo(() => {
+    if (!searchTerm.trim()) return clients;
     
-    // Filtrar por fecha si se especifica
-    if (filterDate) {
-      filtered = filtered.filter(appointment => 
-        appointment.fecha === filterDate
-      );
-    }
-    
-    // Filtrar por término de búsqueda
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(appointment => 
-        (appointment.cliente && appointment.cliente.toLowerCase().includes(searchLower)) || 
-        (appointment.usuario && appointment.usuario.toLowerCase().includes(searchLower)) ||
-        (appointment.vehiculo && appointment.vehiculo.toLowerCase().includes(searchLower)) ||
-        (appointment.lugar && appointment.lugar.toLowerCase().includes(searchLower)) ||
-        (appointment.comentarios && appointment.comentarios.toLowerCase().includes(searchLower))
-      );
-    }
-    
-    return filtered;
-  }, [appointments, searchTerm, filterDate]);
+    const searchLower = searchTerm.toLowerCase();
+    return clients.filter(client => 
+      (client.nombre && client.nombre.toLowerCase().includes(searchLower)) || 
+      (client.apellidos && client.apellidos.toLowerCase().includes(searchLower)) ||
+      (client.email && client.email.toLowerCase().includes(searchLower)) ||
+      (client.telefono && client.telefono.toLowerCase().includes(searchLower)) ||
+      (client.rfc && client.rfc.toLowerCase().includes(searchLower)) ||
+      (client.direccion && client.direccion.toLowerCase().includes(searchLower)) ||
+      (client.ciudad && client.ciudad.toLowerCase().includes(searchLower))
+    );
+  }, [clients, searchTerm]);
   
-  // Obtener citas para la página actual
-  const currentAppointments = useMemo(() => {
+  // Obtener clientes para la página actual
+  const currentClients = useMemo(() => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    return filteredAppointments.slice(indexOfFirstItem, indexOfLastItem);
-  }, [filteredAppointments, currentPage, itemsPerPage]);
+    return filteredClients.slice(indexOfFirstItem, indexOfLastItem);
+  }, [filteredClients, currentPage, itemsPerPage]);
   
   // Calcular número total de páginas
-  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
   
   // Resetear a la primera página cuando cambia el filtro
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterDate]);
+  }, [searchTerm]);
 
-  // Formatear fecha para mostrar
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('es-MX', options);
-  };
-  
-  // Formatear hora para mostrar
-  const formatTime = (timeString) => {
-    if (!timeString) return '';
-    return timeString.substring(0, 5); // Extraer HH:MM
-  };
-
-  // Si no hay citas, mostrar mensaje
-  if (appointments.length === 0 && !loading) {
+  // Si no hay clientes, mostrar mensaje
+  if (clients.length === 0 && !loading) {
     return (
       <div className="mt-4 text-center p-8 bg-white rounded-xl shadow-md border border-gray-100">
         <div className="bg-blue-50 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-          <IoCalendarOutline className="h-10 w-10 text-blue-500" />
+          <IoPersonOutline className="h-10 w-10 text-blue-500" />
         </div>
-        <h3 className="mt-2 text-lg font-semibold text-gray-900">No hay citas</h3>
+        <h3 className="mt-2 text-lg font-semibold text-gray-900">No hay clientes</h3>
         <p className="mt-2 text-base text-gray-600 max-w-md mx-auto">
-          Añade tu primera cita usando el botón "Nueva Cita" para comenzar a gestionar tus compromisos.
+          Añade tu primer cliente usando el botón "Nuevo Cliente" para comenzar a gestionar tus contactos.
         </p>
       </div>
     );
@@ -221,66 +196,67 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hidden sm:table-header-group">
           <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Cliente
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+              Nombre
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Fecha / Hora
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+              Contacto
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Vehículo
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+              RFC
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Lugar
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+              Ubicación
             </th>
-            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">
               Acciones
             </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-100">
           <AnimatePresence>
-            {currentAppointments.map((appointment) => (
+            {currentClients.map((client) => (
               <motion.tr 
-                key={appointment.id}
+                key={client.cliente_id}
                 variants={itemAnimation}
                 initial="hidden"
                 animate="visible"
                 exit={{ opacity: 0, y: -10 }}
                 className="sm:table-row flex flex-col border-b border-gray-200 pb-3 mb-3 sm:pb-0 sm:mb-0 hover:bg-blue-50 transition-colors duration-150"
               >
-                <td className="px-6 py-4 whitespace-nowrap sm:table-cell block" data-label="Cliente:">
-                  <span className="sm:hidden font-bold inline-block mb-1">Cliente:</span>
-                  <div className="text-sm font-medium text-gray-900">{appointment.cliente}</div>
-                  {appointment.usuario && (
-                    <div className="text-xs text-gray-500 mt-1 flex items-center">
-                      <IoPersonOutline className="mr-1" /> {appointment.usuario}
-                    </div>
+                <td className="px-6 py-4 whitespace-nowrap sm:table-cell block" data-label="Nombre:">
+                  <span className="sm:hidden font-bold inline-block mb-1">Nombre:</span>
+                  <div className="text-sm font-medium text-gray-900">{`${client.nombre} ${client.apellidos}`}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap sm:table-cell block" data-label="Contacto:">
+                  <span className="sm:hidden font-bold inline-block mb-1">Contacto:</span>
+                  <div className="text-sm text-gray-600 flex items-center">
+                    <IoMailOutline className="mr-1 text-gray-400" /> {client.email || 'No especificado'}
+                  </div>
+                  <div className="text-sm text-gray-600 flex items-center mt-1">
+                    <IoCallOutline className="mr-1 text-gray-400" /> {client.telefono || 'No especificado'}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap sm:table-cell block" data-label="RFC:">
+                  <span className="sm:hidden font-bold inline-block mb-1">RFC:</span>
+                  <div className="text-sm text-gray-900 flex items-center">
+                    <IoIdCardOutline className="mr-1 text-gray-400" /> 
+                    {client.rfc || <span className="text-gray-400 italic">No especificado</span>}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap sm:table-cell block" data-label="Ubicación:">
+                  <span className="sm:hidden font-bold inline-block mb-1">Ubicación:</span>
+                  <div className="text-sm text-gray-900">
+                    {client.ciudad || <span className="text-gray-400">No especificada</span>}
+                  </div>
+                  {client.direccion && (
+                    <div className="text-sm text-gray-500 truncate max-w-xs">{client.direccion}</div>
                   )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap sm:table-cell block" data-label="Fecha/Hora:">
-                  <span className="sm:hidden font-bold inline-block mb-1">Fecha/Hora:</span>
-                  <div className="text-sm text-gray-900">{formatDate(appointment.fecha)}</div>
-                  <div className="text-sm text-gray-500 flex items-center">
-                    <IoTimeOutline className="mr-1" /> {formatTime(appointment.hora)}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap sm:table-cell block" data-label="Vehículo:">
-                  <span className="sm:hidden font-bold inline-block mb-1">Vehículo:</span>
-                  <div className="text-sm text-gray-900">
-                    {appointment.vehiculo || <span className="text-gray-400">No especificado</span>}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap sm:table-cell block" data-label="Lugar:">
-                  <span className="sm:hidden font-bold inline-block mb-1">Lugar:</span>
-                  <div className="text-sm text-gray-900">
-                    {appointment.lugar || <span className="text-gray-400">No especificado</span>}
-                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sm:table-cell block">
                   <div className="flex justify-end space-x-1">
                     <motion.button
-                      onClick={() => onView(appointment)}
+                      onClick={() => onView(client)}
                       disabled={loading}
                       className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 p-2 rounded-lg transition-colors duration-200"
                       title="Ver detalles"
@@ -290,20 +266,20 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
                       <IoEyeOutline className="h-5 w-5" />
                     </motion.button>
                     <motion.button
-                      onClick={() => onEdit(appointment)}
+                      onClick={() => onEdit(client)}
                       disabled={loading}
                       className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg transition-colors duration-200"
-                      title="Editar cita"
+                      title="Editar cliente"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
                       <IoPencilOutline className="h-5 w-5" />
                     </motion.button>
                     <motion.button
-                      onClick={() => onDelete(appointment.id)}
+                      onClick={() => onDelete(client.cliente_id)}
                       disabled={loading}
                       className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors duration-200"
-                      title="Eliminar cita"
+                      title="Eliminar cliente"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -328,9 +304,9 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4"
     >
       <AnimatePresence>
-        {currentAppointments.map((appointment) => (
+        {currentClients.map((client) => (
           <motion.div
-            key={appointment.id}
+            key={client.cliente_id}
             variants={itemAnimation}
             initial="hidden"
             animate="visible"
@@ -338,48 +314,59 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
             className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300"
           >
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-5 py-3 border-b border-blue-200">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900 truncate">{appointment.cliente}</h3>
-                <div className="bg-white text-blue-700 px-2 py-1 rounded-full text-xs font-medium border border-blue-200">
-                  {appointment.usuario || 'Sin asignar'}
+              <div className="flex items-center">
+                <div className="bg-blue-100 rounded-full p-2">
+                  <IoPersonOutline className="h-6 w-6 text-blue-600" />
                 </div>
+                <h3 className="text-lg font-semibold text-gray-900 ml-3 truncate">{`${client.nombre} ${client.apellidos}`}</h3>
               </div>
             </div>
             <div className="p-5">
-              <div className="flex flex-col space-y-2">
-                <div className="flex items-center text-sm text-gray-500">
-                    <IoCalendarOutline className="mr-1" /> 
-                    {formatDate(appointment.fecha)}
+              <div className="flex flex-col space-y-3">
+                <div className="flex items-start">
+                  <IoMailOutline className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" /> 
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Email</p>
+                    <p className="text-sm text-gray-600">{client.email || 'No especificado'}</p>
                   </div>
-                  <div className="flex items-center text-sm text-gray-500 mt-1">
-                    <IoTimeOutline className="mr-1" /> 
-                    {formatTime(appointment.hora)}
+                </div>
+                
+                <div className="flex items-start">
+                  <IoCallOutline className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" /> 
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Teléfono</p>
+                    <p className="text-sm text-gray-600">{client.telefono || 'No especificado'}</p>
                   </div>
-              
-                {appointment.vehiculo && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <IoCarSportOutline className="mr-2 text-blue-500" />
-                    {appointment.vehiculo}
+                </div>
+                
+                {client.rfc && (
+                  <div className="flex items-start">
+                    <IoIdCardOutline className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" /> 
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">RFC</p>
+                      <p className="text-sm text-gray-600">{client.rfc}</p>
+                    </div>
                   </div>
                 )}
                 
-                {appointment.lugar && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <IoLocationOutline className="mr-2 text-blue-500" />
-                    {appointment.lugar}
+                {(client.direccion || client.ciudad) && (
+                  <div className="flex items-start">
+                    <IoLocationOutline className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" /> 
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Dirección</p>
+                      <p className="text-sm text-gray-600">
+                        {client.direccion && <span className="block">{client.direccion}</span>}
+                        {client.ciudad && <span className="block">{client.ciudad}</span>}
+                        {client.codigo_postal && <span>CP: {client.codigo_postal}</span>}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
               
-              {appointment.comentarios && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <p className="text-sm text-gray-600 line-clamp-2">{appointment.comentarios}</p>
-                </div>
-              )}
-              
               <div className="mt-4 flex justify-end space-x-2 border-t border-gray-100 pt-4">
                 <motion.button
-                  onClick={() => onView(appointment)}
+                  onClick={() => onView(client)}
                   disabled={loading}
                   className="bg-gradient-to-r from-green-50 to-green-100 text-green-700 border border-green-200 hover:border-green-300 px-3 py-1 rounded-lg flex items-center"
                   title="Ver detalles"
@@ -390,10 +377,10 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
                   <span className="text-xs">Ver</span>
                 </motion.button>
                 <motion.button
-                  onClick={() => onEdit(appointment)}
+                  onClick={() => onEdit(client)}
                   disabled={loading}
                   className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 hover:border-blue-300 px-3 py-1 rounded-lg flex items-center"
-                  title="Editar cita"
+                  title="Editar cliente"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
@@ -401,14 +388,15 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
                   <span className="text-xs">Editar</span>
                 </motion.button>
                 <motion.button
-                  onClick={() => onDelete(appointment.id)}
+                  onClick={() => onDelete(client.cliente_id)}
                   disabled={loading}
                   className="bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200 hover:border-red-300 px-3 py-1 rounded-lg flex items-center"
-                  title="Eliminar cita"
+                  title="Eliminar cliente"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
-                  <IoTrashOutline className="h-5 w-5" />
+                  <IoTrashOutline className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Eliminar</span>
                 </motion.button>
               </div>
             </div>
@@ -430,19 +418,18 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
           <div className="flex items-center mb-4 sm:mb-0">
             <div className="bg-white p-2 rounded-full mr-3">
-              <IoCalendarOutline className="h-6 w-6 text-blue-600" />
+              <IoPersonOutline className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Citas Programadas</h2>
-              <p className="text-blue-100 text-sm mt-1">Gestiona todas tus citas de manera sencilla</p>
+              <h2 className="text-xl font-bold text-white">Directorio de Clientes</h2>
+              <p className="text-blue-100 text-sm mt-1">Gestiona tu base de clientes de manera sencilla</p>
             </div>
           </div>
           <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-sm px-3 py-1 rounded-full text-white flex items-center">
             <IoInformationCircleOutline className="mr-1" />
-            Total: {filteredAppointments.length}
+            Total: {filteredClients.length}
           </div>
         </div>
-        
       </div>
       
       {/* Barra de herramientas */}
@@ -453,7 +440,7 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por cliente, usuario o vehículo..."
+              placeholder="Buscar por nombre, email, teléfono..."
               className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
               whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.2)" }}
             />
@@ -468,28 +455,6 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
                 <IoCloseCircleOutline className="h-5 w-5" />
               </button>
             )}
-          </div>
-          
-          <div className="relative">
-            <motion.div whileHover={{ scale: 1.02 }} className="flex">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IoCalendarOutline className="h-5 w-5 text-blue-400" />
-              </div>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="pl-10 px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
-              />
-              {filterDate && (
-                <button
-                  onClick={() => setFilterDate('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  <IoCloseCircleOutline className="h-5 w-5" />
-                </button>
-              )}
-            </motion.div>
           </div>
           
           <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg shadow-sm">
@@ -523,35 +488,32 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
         </div>
       </div>
 
-      {/* Contenido: cargando, mensaje de no resultados o lista de citas */}
+      {/* Contenido: cargando, mensaje de no resultados o lista de clientes */}
       <div className="p-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="animate-spin h-16 w-16 border-4 border-blue-600 border-t-transparent rounded-full mb-6"></div>
-            <p className="text-lg text-gray-600">Cargando citas...</p>
+            <p className="text-lg text-gray-600">Cargando clientes...</p>
           </div>
-        ) : filteredAppointments.length === 0 ? (
+        ) : filteredClients.length === 0 ? (
           <div className="text-center py-12 bg-blue-50 rounded-xl border border-blue-200">
             <div className="mx-auto bg-white p-4 rounded-full w-20 h-20 flex items-center justify-center mb-4 shadow-sm">
               <IoSearchOutline className="h-10 w-10 text-blue-500" />
             </div>
-            <h3 className="mt-2 text-xl font-medium text-gray-900">No se encontraron citas</h3>
+            <h3 className="mt-2 text-xl font-medium text-gray-900">No se encontraron clientes</h3>
             <p className="mt-2 text-gray-600 max-w-md mx-auto">
-              {searchTerm || filterDate ? 
-                `No hay resultados para los filtros aplicados.` : 
-                'No hay citas programadas.'}
+              {searchTerm ? 
+                `No hay resultados para "${searchTerm}".` : 
+                'No hay clientes registrados.'}
             </p>
-            {(searchTerm || filterDate) && (
+            {searchTerm && (
               <motion.button
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilterDate('');
-                }}
+                onClick={() => setSearchTerm('')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="mt-6 inline-flex items-center px-5 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
               >
-                Mostrar todas las citas
+                Mostrar todos los clientes
               </motion.button>
             )}
           </div>
@@ -569,4 +531,4 @@ const AppointmentList = ({ appointments = [], loading = false, onEdit, onDelete,
   );
 };
 
-export default AppointmentList;
+export default ClientList;

@@ -291,8 +291,11 @@ const CreditForm = ({ vehiclesValue, vehicles = [], onCreditConfigChange, onCalc
       return;
     }
     
+    // Asegurar que value sea string antes de usar replace
+    const stringValue = String(value);
+    
     // Remover cualquier caracter no numérico excepto dígitos
-    const sanitizedValue = value.replace(/[^0-9]/g, '');
+    const sanitizedValue = stringValue.replace(/[^0-9]/g, '');
     
     // Si no hay valor después de sanitizar, dejarlo vacío
     if (!sanitizedValue) {

@@ -59,10 +59,19 @@ const AppointmentPage = () => {
   
   // Mostrar formulario para crear nueva cita
   const handleCreateNew = () => {
-    clearSelectedAppointment();
-    setIsEditing(false);
-    setShowForm(true);
-    setShowDetails(false);
+    try {
+      console.log("Iniciando creación de nueva cita");
+      clearSelectedAppointment();
+      setIsEditing(false);
+      setShowDetails(false);
+      // Forzar una actualización asíncrona
+      setTimeout(() => {
+        setShowForm(true);
+        console.log("Formulario de cita visible:", true);
+      }, 0);
+    } catch (error) {
+      console.error("Error al intentar crear nueva cita:", error);
+    }
   };
   
   // Mostrar formulario para editar cita existente
@@ -329,7 +338,11 @@ const AppointmentPage = () => {
           </div>
           
           <button
-            onClick={handleCreateNew}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              handleCreateNew();
+            }}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <IoAddOutline className="h-5 w-5 mr-1" />

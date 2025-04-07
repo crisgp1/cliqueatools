@@ -13,7 +13,9 @@ const PORT = process.env.PORT;
 // Middleware
 // Configuración de CORS para permitir solicitudes desde el frontend
 app.use(cors({
-  origin: 'http://localhost:5173', // Origen específico del frontend (Vite)
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'http://localhost:5173' // Origen específico en producción
+    : '*', // Permitir cualquier origen en desarrollo
   credentials: true, // Permitir credenciales (cookies, headers authorization, etc)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
   allowedHeaders: ['Content-Type', 'Authorization'] // Headers permitidos

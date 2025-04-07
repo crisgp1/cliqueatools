@@ -1,10 +1,12 @@
 import { useState, useEffect, useContext } from 'react'
 import useVehicleStore from './store/vehicleStore'
 import VehicleForm from './pages/VehicleForm'
-import ClientForm from './pages/ClientForm'
+import ClientFormPage from './pages/ClientForm'
+import ClientForm from './components/client/ClientForm'
 import Login from './pages/Login'
 import CreateAccount from './pages/CreateAccount'
 import ApiReference from './pages/ApiReference'
+import OrganizationChart from './pages/OrganizationChart'
 import { AuthProvider, AuthContext } from './context/AuthContext'
 import logoImg from './assets/logo.png'
 import logoImgDark from './assets/logo-dark.png'
@@ -29,7 +31,8 @@ import {
   IoCloseOutline,
   IoDocumentTextOutline,
   IoCodeOutline,
-  IoCalendarOutline
+  IoCalendarOutline,
+  IoPeopleOutline
 } from 'react-icons/io5'
 
 // Animaciones para las transiciones
@@ -116,12 +119,13 @@ const MainApp = () => {
   const sections = [
     { id: 'home', name: 'Inicio', icon: 'home' },
     { id: 'vehicles', name: 'Vehículos', icon: 'car' },
-    // Cliente deshabilitado según requerimiento
+    { id: 'clients', name: 'Clientes', icon: 'user' },
     { id: 'credit', name: 'Configurar Crédito', icon: 'credit-card', disabled: vehicles.length === 0 },
     { id: 'results', name: 'Resultados', icon: 'chart', disabled: creditResults.length === 0 },
     { id: 'amortization', name: 'Tabla de Amortización', icon: 'table', disabled: !selectedBank },
     { id: 'contract', name: 'Contrato', icon: 'document', disabled: vehicles.length === 0 },
     { id: 'appointments', name: 'Citas', icon: 'calendar' },
+    { id: 'organization', name: 'Organigrama', icon: 'organization' },
     { id: 'api', name: 'API Reference', icon: 'code' }
   ]
   
@@ -194,6 +198,8 @@ const MainApp = () => {
         return <IoDocumentTextOutline className="h-5 w-5" />
       case 'calendar':
         return <IoCalendarOutline className="h-5 w-5" />
+      case 'organization':
+        return <IoPeopleOutline className="h-5 w-5" />
       case 'code':
         return <IoCodeOutline className="h-5 w-5" />
       default:
@@ -214,6 +220,23 @@ const MainApp = () => {
               </span>
             </h2>
             <VehicleForm />
+          </div>
+        )
+      case 'clients':
+        return (
+          <div className="uber-card">
+            <h2 className="text-xl font-bold text-uber-black mb-4">
+              <span className="inline-flex items-center">
+                <IoPersonOutline className="h-6 w-6 mr-2 text-uber-accent-blue" />
+                Gestión de Clientes
+              </span>
+            </h2>
+            <ClientForm 
+              initialValues={client}
+              isEditing={false}
+              onSubmit={handleClientChange}
+              onCancel={() => setActiveSection('home')}
+            />
           </div>
         )
       case 'credit':
@@ -303,6 +326,10 @@ const MainApp = () => {
           <div className="uber-card">
             <AppointmentPage />
           </div>
+        )
+      case 'organization':
+        return (
+          <OrganizationChart />
         )
       case 'api':
         return (
