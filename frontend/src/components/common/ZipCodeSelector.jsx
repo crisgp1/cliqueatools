@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
-import { getLocationByZipCode } from '../../services/SepomexService';
+import { getLocationByZipCode, formatAddressData } from '../../services/RadarService';
 import mexicanStatesAndCities from './MexicanStatesData';
 
 /**
@@ -58,21 +58,24 @@ const ZipCodeSelector = memo(({
     if (value && value.length === 5 && /^\d+$/.test(value)) {
       setLoading(true);
       try {
-        const response = await getLocationByZipCode(value);
+        const results = await getLocationByZipCode(value);
         
-        if (response && response.zip_codes && response.zip_codes.length > 0) {
-          // Extraer datos relevantes del primer resultado
-          const location = response.zip_codes[0];
-          const newState = location.d_estado;
-          const newCity = location.d_ciudad || location.d_mnpio;
+        if (results && results.length > 0) {
+          // Extraer datos del primer resultado
+          const formattedLocation = formatAddressData(results[0]);
+          const newState = formattedLocation.state;
+          const newCity = formattedLocation.city;
           
           setState(newState);
           setCity(newCity);
           setZipCodeLocked(true);
           
-          // Extraer todas las colonias únicas para este código postal
+          // Recopilar colonias únicas de todos los resultados
           const uniqueColonies = [...new Set(
-            response.zip_codes.map(item => item.d_asenta)
+            results.map(item => {
+              const data = formatAddressData(item);
+              return data.colony;
+            }).filter(c => c) // Filtrar valores vacíos
           )];
           
           setColonies(uniqueColonies);

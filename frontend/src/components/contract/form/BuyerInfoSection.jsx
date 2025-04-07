@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { IoInformationCircleOutline } from 'react-icons/io5';
 import { identificacionesComunes } from '../utils/ContractUtils';
+import RadarAddressAutocomplete from '../../common/RadarAddressAutocomplete';
 import { ErrorMessage, addErrorClass } from '../utils/ErrorSummary';
 import { validateMexicanField } from '../utils/ValidationSchema';
 
@@ -188,20 +189,19 @@ const BuyerInfoSection = memo(({
           />
         </motion.div>
 
-        {/* Buyer Address */}
+        {/* Buyer Address with Radar Autocomplete */}
         <motion.div className={`govuk-form-group ${errors.domicilioComprador ? 'govuk-form-group--error' : ''}`} variants={itemAnimation}>
           <label htmlFor="domicilioComprador" className="govuk-label">
             Domicilio <span className="text-royal-red">*</span>
           </label>
           <ErrorMessage message={errors.domicilioComprador} />
-          <input
-            type="text"
-            id="domicilioComprador"
-            name="domicilioComprador"
+          <RadarAddressAutocomplete
             value={formData.domicilioComprador}
             onChange={handleChange}
-            className={addErrorClass("govuk-input", errors.domicilioComprador)}
-            required
+            required={true}
+            error={errors.domicilioComprador}
+            inputId="domicilioComprador"
+            showMap={false}
           />
         </motion.div>
 

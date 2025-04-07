@@ -4,6 +4,7 @@ import VehicleForm from './pages/VehicleForm'
 import ClientForm from './pages/ClientForm'
 import Login from './pages/Login'
 import CreateAccount from './pages/CreateAccount'
+import ApiReference from './pages/ApiReference'
 import { AuthProvider, AuthContext } from './context/AuthContext'
 import logoImg from './assets/logo.png'
 import logoImgDark from './assets/logo-dark.png'
@@ -25,7 +26,8 @@ import {
   IoTrashOutline,
   IoMenuOutline,
   IoCloseOutline,
-  IoDocumentTextOutline
+  IoDocumentTextOutline,
+  IoCodeOutline
 } from 'react-icons/io5'
 
 // Animaciones para las transiciones
@@ -116,7 +118,8 @@ const MainApp = () => {
     { id: 'credit', name: 'Configurar Crédito', icon: 'credit-card', disabled: vehicles.length === 0 },
     { id: 'results', name: 'Resultados', icon: 'chart', disabled: creditResults.length === 0 },
     { id: 'amortization', name: 'Tabla de Amortización', icon: 'table', disabled: !selectedBank },
-    { id: 'contract', name: 'Contrato', icon: 'document', disabled: vehicles.length === 0 }
+    { id: 'contract', name: 'Contrato', icon: 'document', disabled: vehicles.length === 0 },
+    { id: 'api', name: 'API Reference', icon: 'code' }
   ]
   
   // Actualizar monto de enganche cuando cambia el valor total de vehículos
@@ -186,6 +189,8 @@ const MainApp = () => {
         return <IoGridOutline className="h-5 w-5" />
       case 'document':
         return <IoDocumentTextOutline className="h-5 w-5" />
+      case 'code':
+        return <IoCodeOutline className="h-5 w-5" />
       default:
         return null
     }
@@ -286,6 +291,18 @@ const MainApp = () => {
               vehicles={vehicles}
               client={client}
             />
+          </div>
+        )
+      case 'api':
+        return (
+          <div className="bg-white shadow-md p-6 border-l-4 border-l-blue-700">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              <span className="inline-flex items-center">
+                <IoCodeOutline className="h-6 w-6 mr-2 text-blue-600" />
+                API Reference
+              </span>
+            </h2>
+            <ApiReference />
           </div>
         )
       default:

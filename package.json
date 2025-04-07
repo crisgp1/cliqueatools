@@ -29,6 +29,7 @@
         "morgan": "^1.10.0",
         "pg": "^8.11.3",
         "pg-hstore": "^2.3.4",
+        "radar-sdk-js": "^4.5.1",
         "sequelize": "^6.37.6"
     },
     "devDependencies": {

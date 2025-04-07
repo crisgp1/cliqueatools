@@ -55,6 +55,9 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     hora: formattedTime,
     codigoPostal: '',
     colonia: '',
+    calle: '',
+    numeroExterior: '',
+    direccionCompleta: '',
 
     // Información del comprador
     nombreComprador: client.nombre ? `${client.nombre} ${client.apellidos || ''}` : '',
@@ -128,14 +131,17 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     }
   }, [contractData]);
 
-  // Manejador para los cambios de ubicación (estado/ciudad/codigo postal/colonia)
-  const handleLocationChange = useCallback(({ state, city, colony, zipCode }) => {
+  // Manejador para los cambios de ubicación (estado/ciudad/codigo postal/colonia/calle/etc)
+  const handleLocationChange = useCallback(({ state, city, colony, zipCode, street, houseNumber, fullAddress }) => {
     setContractData(prevData => ({
       ...prevData,
-      estado: state,
-      ciudad: city,
+      estado: state || prevData.estado,
+      ciudad: city || prevData.ciudad,
       colonia: colony || prevData.colonia,
-      codigoPostal: zipCode || prevData.codigoPostal
+      codigoPostal: zipCode || prevData.codigoPostal,
+      calle: street || prevData.calle,
+      numeroExterior: houseNumber || prevData.numeroExterior,
+      direccionCompleta: fullAddress || prevData.direccionCompleta
     }));
   }, []);
 

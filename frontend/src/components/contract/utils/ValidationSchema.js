@@ -30,6 +30,11 @@ export const contractSchema = Joi.object({
     'string.empty': 'La hora es obligatoria',
     'any.required': 'La hora es obligatoria'
   }),
+  codigoPostal: Joi.string().allow(''),
+  colonia: Joi.string().allow(''),
+  calle: Joi.string().allow(''),
+  numeroExterior: Joi.string().allow(''),
+  direccionCompleta: Joi.string().allow(''),
 
   // Información del Comprador - campos obligatorios
   nombreComprador: Joi.string().required().messages({
