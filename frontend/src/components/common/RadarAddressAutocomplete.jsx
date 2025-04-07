@@ -83,12 +83,13 @@ const RadarAddressAutocomplete = ({
               const formattedAddress = formatAddressData(address);
               setSelectedAddress(formattedAddress);
               
-              // Notificar al componente padre sobre la selección
+              // Notificar al componente padre sobre la selección con el objeto completo
               if (onChange) {
                 onChange({
                   target: {
                     name: inputId,
-                    value: formattedAddress.formattedAddress
+                    value: formattedAddress.formattedAddress,
+                    addressObject: formattedAddress // Pasar el objeto completo para que esté disponible
                   }
                 });
               }
