@@ -15,6 +15,7 @@ import CreditForm from './pages/CreditForm'
 import BankComparison from './pages/BankComparison'
 import AmortizationTable from './pages/AmortizationTable'
 import ContractForm from './pages/ContractForm'
+import AppointmentPage from './pages/AppointmentPage'
 import { 
   IoHomeOutline, 
   IoCarSportOutline,
@@ -27,7 +28,8 @@ import {
   IoMenuOutline,
   IoCloseOutline,
   IoDocumentTextOutline,
-  IoCodeOutline
+  IoCodeOutline,
+  IoCalendarOutline
 } from 'react-icons/io5'
 
 // Animaciones para las transiciones
@@ -119,6 +121,7 @@ const MainApp = () => {
     { id: 'results', name: 'Resultados', icon: 'chart', disabled: creditResults.length === 0 },
     { id: 'amortization', name: 'Tabla de Amortización', icon: 'table', disabled: !selectedBank },
     { id: 'contract', name: 'Contrato', icon: 'document', disabled: vehicles.length === 0 },
+    { id: 'appointments', name: 'Citas', icon: 'calendar' },
     { id: 'api', name: 'API Reference', icon: 'code' }
   ]
   
@@ -189,6 +192,8 @@ const MainApp = () => {
         return <IoGridOutline className="h-5 w-5" />
       case 'document':
         return <IoDocumentTextOutline className="h-5 w-5" />
+      case 'calendar':
+        return <IoCalendarOutline className="h-5 w-5" />
       case 'code':
         return <IoCodeOutline className="h-5 w-5" />
       default:
@@ -201,10 +206,10 @@ const MainApp = () => {
     switch(activeSection) {
       case 'vehicles':
         return (
-          <div className="bg-white shadow-md p-6 border-l-4 border-l-blue-700">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="uber-card">
+            <h2 className="text-xl font-bold text-uber-black mb-4">
               <span className="inline-flex items-center">
-                <IoCarSportOutline className="h-6 w-6 mr-2 text-blue-600" />
+                <IoCarSportOutline className="h-6 w-6 mr-2 text-uber-accent-blue" />
                 Gestión de Vehículos
               </span>
             </h2>
@@ -213,10 +218,10 @@ const MainApp = () => {
         )
       case 'credit':
         return (
-          <div className="bg-white shadow-md p-6 border-l-4 border-l-purple-700">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="uber-card">
+            <h2 className="text-xl font-bold text-uber-black mb-4">
               <span className="inline-flex items-center">
-                <IoCardOutline className="h-6 w-6 mr-2 text-purple-600" />
+                <IoCardOutline className="h-6 w-6 mr-2 text-uber-accent-blue" />
                 Configuración del Crédito
               </span>
             </h2>
@@ -230,10 +235,10 @@ const MainApp = () => {
         )
       case 'results':
         return (
-          <div className="bg-white shadow-md p-6 border-l-4 border-l-indigo-700">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="uber-card">
+            <h2 className="text-xl font-bold text-uber-black mb-4">
               <span className="inline-flex items-center">
-                <IoStatsChartOutline className="h-6 w-6 mr-2 text-indigo-600" />
+                <IoStatsChartOutline className="h-6 w-6 mr-2 text-uber-accent-blue" />
                 Resultados de la Simulación
               </span>
             </h2>
@@ -245,10 +250,10 @@ const MainApp = () => {
         )
       case 'amortization':
         return (
-          <div className="bg-white shadow-md p-6 border-l-4 border-l-green-700">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="uber-card">
+            <h2 className="text-xl font-bold text-uber-black mb-4">
               <span className="inline-flex items-center">
-                <IoGridOutline className="h-6 w-6 mr-2 text-green-600" />
+                <IoGridOutline className="h-6 w-6 mr-2 text-uber-accent-blue" />
                 Tabla de Amortización
               </span>
             </h2>
@@ -280,10 +285,10 @@ const MainApp = () => {
         )
       case 'contract':
         return (
-          <div className="bg-white shadow-md p-6 border-l-4 border-l-orange-700">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="uber-card">
+            <h2 className="text-xl font-bold text-uber-black mb-4">
               <span className="inline-flex items-center">
-                <IoDocumentTextOutline className="h-6 w-6 mr-2 text-orange-600" />
+                <IoDocumentTextOutline className="h-6 w-6 mr-2 text-uber-accent-blue" />
                 Contrato de Compraventa
               </span> 
             </h2>
@@ -293,12 +298,18 @@ const MainApp = () => {
             />
           </div>
         )
+      case 'appointments':
+        return (
+          <div className="uber-card">
+            <AppointmentPage />
+          </div>
+        )
       case 'api':
         return (
-          <div className="bg-white shadow-md p-6 border-l-4 border-l-blue-700">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="uber-card">
+            <h2 className="text-xl font-bold text-uber-black mb-4">
               <span className="inline-flex items-center">
-                <IoCodeOutline className="h-6 w-6 mr-2 text-blue-600" />
+                <IoCodeOutline className="h-6 w-6 mr-2 text-uber-accent-blue" />
                 API Reference
               </span>
             </h2>
@@ -307,44 +318,44 @@ const MainApp = () => {
         )
       default:
         return (
-          <div className="bg-white shadow-md p-6">
+          <div className="uber-card">
             <div className="flex flex-col md:flex-row gap-6">
               <div className="md:w-2/3">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-200 pb-2">Simula tu Crédito Automotriz</h2>
-                <p className="text-gray-600 mb-6">
+                <h2 className="text-2xl font-bold text-uber-black mb-4 border-b border-uber-gray-200 pb-2">Simula tu Crédito Automotriz</h2>
+                <p className="text-uber-gray-600 mb-6">
                   Bienvenido al simulador de crédito automotriz de Cliquéalo.mx, donde podrás comparar las mejores opciones de financiamiento para tu(s) vehículo(s). Sigue estos sencillos pasos:
                 </p>
                 
                 <div className="space-y-4">
                   <div className="flex items-start mb-6">
-                    <div className="flex-shrink-0 h-8 w-8 bg-blue-800 flex items-center justify-center text-white font-bold">1</div>
+                    <div className="flex-shrink-0 h-8 w-8 bg-uber-accent-blue rounded-full flex items-center justify-center text-uber-white font-bold">1</div>
                     <div className="ml-4">
-                      <h3 className="text-lg font-medium text-gray-900">Agrega los vehículos a financiar</h3>
-                      <p className="text-gray-600">Ingresa los detalles de uno o varios vehículos que deseas incluir en tu financiamiento.</p>
+                      <h3 className="text-lg font-medium text-uber-black">Agrega los vehículos a financiar</h3>
+                      <p className="text-uber-gray-600">Ingresa los detalles de uno o varios vehículos que deseas incluir en tu financiamiento.</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start mb-6">
-                    <div className="flex-shrink-0 h-8 w-8 bg-blue-800 flex items-center justify-center text-white font-bold">2</div>
+                    <div className="flex-shrink-0 h-8 w-8 bg-uber-accent-blue rounded-full flex items-center justify-center text-uber-white font-bold">2</div>
                     <div className="ml-4">
-                      <h3 className="text-lg font-medium text-gray-900">Captura tus datos personales</h3>
-                      <p className="text-gray-600">Proporciona la información necesaria para generar tu simulación personalizada.</p>
+                      <h3 className="text-lg font-medium text-uber-black">Captura tus datos personales</h3>
+                      <p className="text-uber-gray-600">Proporciona la información necesaria para generar tu simulación personalizada.</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start mb-6">
-                    <div className="flex-shrink-0 h-8 w-8 bg-blue-800 flex items-center justify-center text-white font-bold">3</div>
+                    <div className="flex-shrink-0 h-8 w-8 bg-uber-accent-blue rounded-full flex items-center justify-center text-uber-white font-bold">3</div>
                     <div className="ml-4">
-                      <h3 className="text-lg font-medium text-gray-900">Configura las condiciones del crédito</h3>
-                      <p className="text-gray-600">Elige el enganche, plazo y otras opciones para tu financiamiento.</p>
+                      <h3 className="text-lg font-medium text-uber-black">Configura las condiciones del crédito</h3>
+                      <p className="text-uber-gray-600">Elige el enganche, plazo y otras opciones para tu financiamiento.</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start mb-6">
-                    <div className="flex-shrink-0 h-8 w-8 bg-blue-800 flex items-center justify-center text-white font-bold">4</div>
+                    <div className="flex-shrink-0 h-8 w-8 bg-uber-accent-blue rounded-full flex items-center justify-center text-uber-white font-bold">4</div>
                     <div className="ml-4">
-                      <h3 className="text-lg font-medium text-gray-900">Compara opciones y genera tu tabla de amortización</h3>
-                      <p className="text-gray-600">Analiza las diferentes opciones de financiamiento y exporta tu tabla de pagos a PDF.</p>
+                      <h3 className="text-lg font-medium text-uber-black">Compara opciones y genera tu tabla de amortización</h3>
+                      <p className="text-uber-gray-600">Analiza las diferentes opciones de financiamiento y exporta tu tabla de pagos a PDF.</p>
                     </div>
                   </div>
                 </div>
@@ -352,7 +363,7 @@ const MainApp = () => {
                 <div className="mt-6">
                   <button
                     onClick={() => setActiveSection('vehicles')}
-                    className="inline-flex items-center px-5 py-3 border border-transparent text-base font-medium shadow-md text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-700"
+                    className="uber-button inline-flex items-center px-5 py-3"
                   >
                     <IoAddOutline className="h-5 w-5 mr-2" />
                     Comenzar ahora
@@ -360,26 +371,26 @@ const MainApp = () => {
                 </div>
               </div>
               
-              <div className="md:w-1/3 bg-gray-100 p-4 border border-l-4 border-l-blue-700">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">Resumen actual</h3>
+              <div className="md:w-1/3 bg-uber-gray-50 p-4 rounded-uber shadow-uber">
+                <h3 className="text-lg font-medium text-uber-black mb-4 border-b border-uber-gray-200 pb-2">Resumen actual</h3>
                 
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700">Vehículos</h4>
+                    <h4 className="text-sm font-medium text-uber-gray-700">Vehículos</h4>
                     {vehicles.length > 0 ? (
                       <div className="mt-1 text-sm">
                         <p className="font-medium">{vehicles.length} vehículo(s) agregado(s)</p>
-                        <p className="text-blue-800 font-bold">{formatCurrency(totalVehicleValue)}</p>
+                        <p className="text-uber-accent-blue font-bold">{formatCurrency(totalVehicleValue)}</p>
                       </div>
                     ) : (
-                      <p className="mt-1 text-sm text-gray-500">No hay vehículos agregados</p>
+                      <p className="mt-1 text-sm text-uber-gray-500">No hay vehículos agregados</p>
                     )}
                   </div>
                   
                   {/* Sección de cliente deshabilitada */}
                   
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700">Crédito</h4>
+                    <h4 className="text-sm font-medium text-uber-gray-700">Crédito</h4>
                     {vehicles.length > 0 ? (
                       <div className="mt-1 text-sm space-y-1">
                         <div className="flex justify-between">
@@ -396,18 +407,18 @@ const MainApp = () => {
                         </div>
                       </div>
                     ) : (
-                      <p className="mt-1 text-sm text-gray-500">Agrega vehículos primero</p>
+                      <p className="mt-1 text-sm text-uber-gray-500">Agrega vehículos primero</p>
                     )}
                   </div>
                   
                   {creditResults.length > 0 && (
-                    <div className="pt-3 border-t border-gray-300">
-                      <h4 className="text-sm font-medium text-gray-700">
+                    <div className="pt-3 border-t border-uber-gray-300">
+                      <h4 className="text-sm font-medium text-uber-gray-700">
                         {comparisonMode && creditConfig.selectedBanks.length > 1 
                           ? `Comparando ${creditConfig.selectedBanks.length} bancos` 
                           : "Mejor opción:"}
                       </h4>
-                      <div className="mt-2 bg-white p-3 border-l-4 border-l-blue-700 shadow-md">
+                      <div className="mt-2 bg-uber-white p-3 rounded-uber shadow-uber">
                         <div className="flex items-center mb-2">
                           {typeof creditResults[0].logo === 'string' && !creditResults[0].logo.includes('.') ? (
                             <div className="text-2xl mr-2">{creditResults[0].logo}</div>
@@ -417,21 +428,21 @@ const MainApp = () => {
                           <div className="font-medium">
                             {creditResults[0].nombre}
                             {creditResults[0].hasCustomConfig && (
-                              <span className="ml-2 text-xs text-green-600">(Personalizado)</span>
+                              <span className="ml-2 text-xs text-uber-accent-green">(Personalizado)</span>
                             )}
                           </div>
                         </div>
                         <div className="text-sm space-y-1">
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Pago mensual:</span>
-                            <span className="font-bold text-blue-800">{formatCurrency(creditResults[0].monthlyPayment)}</span>
+                            <span className="text-uber-gray-600">Pago mensual:</span>
+                            <span className="font-bold text-uber-accent-blue">{formatCurrency(creditResults[0].monthlyPayment)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Tasa:</span>
+                            <span className="text-uber-gray-600">Tasa:</span>
                             <span>{creditResults[0].tasa.toFixed(2)}%</span>
                           </div>
                           {comparisonMode && creditResults.length > 1 && (
-                            <div className="flex justify-between text-green-600">
+                            <div className="flex justify-between text-uber-accent-green">
                               <span>Ahorro vs. peor opción:</span>
                               <span className="font-medium">
                                 {formatCurrency((creditResults[creditResults.length - 1].monthlyPayment - creditResults[0].monthlyPayment) * creditResults[0].term)}
@@ -441,7 +452,7 @@ const MainApp = () => {
                         </div>
                         <button
                           onClick={() => setActiveSection('results')}
-                          className="mt-2 w-full text-xs text-blue-800 hover:text-blue-900 font-medium"
+                          className="mt-2 w-full text-xs text-uber-accent-blue hover:text-uber-accent-blue/80 font-medium"
                         >
                           Ver todas las opciones
                         </button>
@@ -510,28 +521,28 @@ const MainApp = () => {
         )}
       </AnimatePresence>
       {/* Header */}
-      <header className="bg-gray-800 shadow-md py-3 sticky top-0 z-20">
+      <header className="uber-header">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <img src={logoImgDark} alt="Cliquéalo" className="h-6" />
+              <img src={logoImg} alt="Cliquéalo" className="h-6" />
             </div>
             <div className="flex items-center">
               {/* Información del usuario */}
               <div className="hidden md:flex items-center mr-4">
-                <span className="text-white text-sm font-medium">
-                  {user?.usuario} <span className="text-gray-400">({user?.rol})</span>
+                <span className="text-uber-black text-sm font-medium">
+                  {user?.usuario} <span className="text-uber-gray-600">({user?.rol})</span>
                 </span>
               </div>
               {/* Botón de cerrar sesión */}
               <button 
                 onClick={handleLogout}
-                className="text-white hover:text-gray-300 text-sm px-3 py-1 mr-4 border border-gray-600 rounded"
+                className="text-uber-black hover:bg-uber-gray-100 text-sm px-4 py-2 mr-4 rounded-uber transition-colors"
               >
                 Cerrar sesión
               </button>
               <button 
-                className="md:hidden text-white p-2"
+                className="md:hidden text-uber-black p-2"
                 onClick={toggleMobileMenu}
                 aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
               >
@@ -547,7 +558,7 @@ const MainApp = () => {
       
       {/* Mobile Menu Overlay - Appears when menu button is clicked */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-gray-900 z-10 md:hidden pt-16 pb-20">
+        <div className="fixed inset-0 bg-uber-white z-10 md:hidden pt-16 pb-20">
           <nav className="h-full overflow-y-auto px-4 py-2">
             <ul className="space-y-1">
               {sections.map(section => (
@@ -558,10 +569,10 @@ const MainApp = () => {
                       setMobileMenuOpen(false);
                     }}
                     disabled={section.disabled}
-                    className={`w-full text-left px-4 py-4 flex items-center space-x-4 ${
+                    className={`w-full text-left px-4 py-4 flex items-center space-x-4 rounded-uber ${
                       activeSection === section.id
-                        ? 'bg-gray-800 text-white border-l-4 border-blue-600'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                        ? 'bg-uber-gray-50 text-uber-black border-l-4 border-uber-accent-blue pl-3'
+                        : 'text-uber-gray-700 hover:bg-uber-gray-50 hover:text-uber-black'
                     } ${section.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     <span className="flex-shrink-0">
@@ -569,7 +580,7 @@ const MainApp = () => {
                     </span>
                     <span className="font-medium text-lg">{section.name}</span>
                     {section.count && (
-                      <span className="ml-auto bg-blue-900 text-blue-100 text-xs px-2 py-1 rounded">
+                      <span className="ml-auto bg-uber-accent-blue text-uber-white text-xs px-2 py-1 rounded-full">
                         {section.count}
                       </span>
                     )}
@@ -584,10 +595,10 @@ const MainApp = () => {
       {/* Main Content with Sidebar */}
       <div className="flex-1 flex flex-col md:flex-row">
         {/* Sidebar */}
-        <aside className="w-64 bg-gray-900 shadow-xl hidden md:block">
-          <div className="p-5 border-b border-gray-700">
-            <img src={logoImgDark} alt="Cliquéalo" className="h-8 mb-3" />
-            <h2 className="text-lg font-semibold text-white">Simulador de Crédito</h2>
+        <aside className="uber-sidebar">
+          <div className="p-5 border-b border-uber-gray-200">
+            <img src={logoImg} alt="Cliquéalo" className="h-8 mb-3" />
+            <h2 className="text-lg font-semibold text-uber-black">Simulador de Crédito</h2>
           </div>
           <nav className="mt-2">
             <ul>
@@ -598,8 +609,8 @@ const MainApp = () => {
                     disabled={section.disabled}
                     className={`w-full text-left px-4 py-3 flex items-center space-x-3 ${
                       activeSection === section.id
-                        ? 'bg-gray-800 text-white border-l-4 border-blue-600'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                        ? 'uber-nav-item-active'
+                        : 'uber-nav-item'
                     } ${section.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     <span className="flex-shrink-0">
@@ -607,7 +618,7 @@ const MainApp = () => {
                     </span>
                     <span className="font-medium">{section.name}</span>
                     {section.count && (
-                      <span className="ml-auto bg-blue-900 text-blue-100 text-xs px-2 py-1 rounded">
+                      <span className="ml-auto bg-uber-accent-blue text-uber-white text-xs px-2 py-1 rounded-full">
                         {section.count}
                       </span>
                     )}
@@ -620,23 +631,23 @@ const MainApp = () => {
 
         {/* Mobile Section Pills - Only visible on mobile when menu is closed */}
         {!mobileMenuOpen && (
-          <div className="md:hidden bg-gray-800 shadow-md sticky top-16 z-10 overflow-x-auto">
+          <div className="uber-mobile-nav md:hidden">
             <div className="flex whitespace-nowrap p-2">
               {sections.map(section => (
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
                   disabled={section.disabled}
-                  className={`inline-flex items-center px-3 py-2 rounded text-sm font-medium mr-2 ${
+                  className={`${
                     activeSection === section.id
-                      ? 'bg-gray-700 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                      ? 'uber-mobile-nav-item-active'
+                      : 'uber-mobile-nav-item'
                   } ${section.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <span className="mr-1">{renderIcon(section.icon)}</span>
                   <span>{section.name}</span>
                   {section.count && (
-                    <span className="ml-1 bg-blue-800 text-white text-xs px-1.5 py-0.5 rounded">
+                    <span className="ml-1 bg-uber-accent-blue text-uber-white text-xs px-1.5 py-0.5 rounded-full">
                       {section.count}
                     </span>
                   )}
@@ -647,14 +658,14 @@ const MainApp = () => {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-white">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-uber-white">
           {renderContent()}
         </main>
-      </div>  
+      </div>
 
       {/* Footer */}
       <motion.footer 
-        className="bg-gray-900 text-white py-5"
+        className="bg-uber-white border-t border-uber-gray-200 py-5"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.5 }}
@@ -662,29 +673,29 @@ const MainApp = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0 text-center md:text-left">
-                <img src={logoImgDark} alt="Cliquéalo" className="h-8 md:h-10" />
+                <img src={logoImg} alt="Cliquéalo" className="h-8 md:h-10" />
             </div>
             
             <div className="text-center md:text-right">
-              <p className="text-xs md:text-sm text-gray-400">© {new Date().getFullYear()} Cliquéalo.mx - Todos los derechos reservados</p>
-              <p className="text-xs md:text-sm text-gray-400">USO INTERNO - Este sitio es propiedad de Cliquéalo.mx</p>
+              <p className="text-xs md:text-sm text-uber-gray-600">© {new Date().getFullYear()} Cliquéalo.mx - Todos los derechos reservados</p>
+              <p className="text-xs md:text-sm text-uber-gray-600">USO INTERNO - Este sitio es propiedad de Cliquéalo.mx</p>
             </div>
           </div>
         </div>
       </motion.footer>
       
       {/* Mobile Bottom Navigation - Fixed at bottom for quick access */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 shadow-lg z-10">
-        <div className="flex justify-around items-center py-2">
+      <div className="uber-bottom-nav md:hidden">
+        <div className="flex justify-around items-center">
           {sections.slice(0, 5).map(section => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
               disabled={section.disabled}
-              className={`flex flex-col items-center px-2 py-1 ${
+              className={`${
                 activeSection === section.id
-                  ? 'text-white'
-                  : 'text-gray-400'
+                  ? 'uber-bottom-nav-item-active'
+                  : 'uber-bottom-nav-item'
               } ${section.disabled ? 'opacity-50' : ''}`}
             >
               <span className="text-xl">{renderIcon(section.icon)}</span>

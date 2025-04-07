@@ -14,6 +14,7 @@ import {
   Filler,
   DoughnutController
 } from 'chart.js';
+import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 
 // Registrar los componentes necesarios de Chart.js
 ChartJS.register(
@@ -45,6 +46,9 @@ import CreditTimeline from '../components/credit/CreditTimeline';
 import { calculateMonthlyPayment } from '../components/credit/utils/CreditUtils';
 
 const CreditForm = ({ vehiclesValue, vehicles = [], onCreditConfigChange, onCalculateResults }) => {
+  // Estado para controlar el paso actual del formulario
+  const [currentStep, setCurrentStep] = useState(1);
+  
   // Estado para los datos del formulario
   const [downPaymentPercentage, setDownPaymentPercentage] = useState("");
   const [downPaymentAmount, setDownPaymentAmount] = useState("");
@@ -56,6 +60,13 @@ const CreditForm = ({ vehiclesValue, vehicles = [], onCreditConfigChange, onCalc
   const [selectedBankId, setSelectedBankId] = useState(null);
   // Estado para errores de validación
   const [validationError, setValidationError] = useState(null);
+  // Estado para indicar si un paso es válido
+  const [stepValidation, setStepValidation] = useState({
+    1: false, // Vehículo
+    2: false, // Enganche
+    3: false, // Plazo
+    4: false  // Bancos
+  });
   // Valor total de los vehículos seleccionados
   const selectedVehiclesValue = selectedVehicles.reduce((sum, vehicle) => sum + vehicle.valor, 0);
   // Usar el valor de los vehículos seleccionados si hay alguno, de lo contrario usar el valor total
@@ -564,6 +575,179 @@ const CreditForm = ({ vehiclesValue, vehicles = [], onCreditConfigChange, onCalc
   const handleToggleCustomCat = () => setUseCustomCat(!useCustomCat);
   const handleCustomCatChange = (value) => setCustomCat(value);
 
+  // Validar el paso actual y actualizar el estado de validación
+  const validateCurrentStep = useCallback(() => {
+    switch(currentStep) {
+      case 1: // Vehículo
+        const isStep1Valid = selectedVehicles.length > 0;
+        setStepValidation(prev => ({ ...prev, 1: isStep1Valid }));
+        return isStep1Valid;
+      
+      case 2: // Enganche
+        const isStep2Valid = downPaymentAmount !== "" && downPaymentPercentage !== "" && 
+                            downPaymentAmount >= 0 && downPaymentPercentage >= 0 && 
+                            downPaymentPercentage <= 100 && downPaymentAmount <= effectiveVehiclesValue;
+        setStepValidation(prev => ({ ...prev, 2: isStep2Valid }));
+        return isStep2Valid;
+      
+      case 3: // Plazo
+        const isStep3Valid = term !== "";
+        setStepValidation(prev => ({ ...prev, 3: isStep3Valid }));
+        return isStep3Valid;
+      
+      case 4: // Bancos
+        const isStep4Valid = selectedBankId !== null;
+        setStepValidation(prev => ({ ...prev, 4: isStep4Valid }));
+        return isStep4Valid;
+      
+      default:
+        return true;
+    }
+  }, [currentStep, selectedVehicles.length, downPaymentAmount, downPaymentPercentage, effectiveVehiclesValue, term, selectedBankId]);
+
+  // Validar el paso actual cuando cambian los valores relevantes
+  useEffect(() => {
+    validateCurrentStep();
+  }, [validateCurrentStep, selectedVehicles, downPaymentAmount, downPaymentPercentage, term, selectedBankId]);
+
+  // Efecto para calcular automáticamente al llegar al paso 5 (Comparación)
+  useEffect(() => {
+    if (currentStep === 5) {
+      handleCalculate();
+    }
+  }, [currentStep]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Avanzar al siguiente paso
+  const handleNextStep = () => {
+    const isCurrentStepValid = validateCurrentStep();
+    
+    if (isCurrentStepValid) {
+      setCurrentStep(prev => Math.min(prev + 1, 6));
+    } else {
+      // Mostrar mensaje de error si el paso actual no es válido
+      if (currentStep === 1 && selectedVehicles.length === 0) {
+        setValidationError("Debes seleccionar al menos un vehículo para continuar");
+      } else if (currentStep === 2) {
+        if (downPaymentAmount === "" || downPaymentPercentage === "") {
+          setValidationError("Debes configurar el enganche para continuar");
+        } else if (downPaymentAmount > effectiveVehiclesValue) {
+          setValidationError("El enganche no puede ser superior al valor del vehículo");
+        } else if (downPaymentPercentage > 100) {
+          setValidationError("El porcentaje de enganche no puede ser superior a 100%");
+        }
+      } else if (currentStep === 3 && term === "") {
+        setValidationError("Debes seleccionar un plazo para continuar");
+      } else if (currentStep === 4 && selectedBankId === null) {
+        setValidationError("Debes seleccionar un banco para continuar");
+      }
+    }
+  };
+
+  // Retroceder al paso anterior
+  const handlePrevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+    // Limpiar mensajes de error al retroceder
+    setValidationError(null);
+    setValidationShown(false);
+  };
+
+  // Función para renderizar el contenido según el paso actual
+  const renderStepContent = () => {
+    switch(currentStep) {
+      case 1: // Vehículo
+        return (
+          <VehicleSelectionPanel
+            vehicles={vehicles}
+            selectedVehicles={selectedVehicles}
+            onVehicleToggle={toggleVehicleSelection}
+            effectiveVehiclesValue={effectiveVehiclesValue}
+          />
+        );
+      
+      case 2: // Enganche
+        return (
+          <DownPaymentConfig
+            downPaymentPercentage={downPaymentPercentage}
+            downPaymentAmount={downPaymentAmount}
+            effectiveVehiclesValue={effectiveVehiclesValue}
+            financingAmount={financingAmount}
+            validationError={validationError}
+            onPercentageChange={handleDownPaymentPercentageChange}
+            onAmountChange={handleDownPaymentAmountChange}
+          />
+        );
+      
+      case 3: // Plazo
+        return (
+          <TermSelector
+            term={term}
+            financingAmount={financingAmount}
+            onTermChange={setTerm}
+          />
+        );
+      
+      case 4: // Bancos
+        return (
+          <>
+            <CustomRateConfig
+              useCustomRate={useCustomRate}
+              customRate={customRate}
+              useCustomCat={useCustomCat}
+              customCat={customCat}
+              validationError={validationError}
+              onToggleCustomRate={handleToggleCustomRate}
+              onCustomRateChange={handleCustomRateChange}
+              onToggleCustomCat={handleToggleCustomCat}
+              onCustomCatChange={handleCustomCatChange}
+            />
+            
+            <BankSelectionGrid
+              selectedBankId={selectedBankId}
+              selectedBanks={selectedBanks}
+              customizedBanks={customizedBanks}
+              useCustomRate={useCustomRate}
+              customRate={customRate}
+              useCustomCat={useCustomCat}
+              customCat={customCat}
+              onSelectBank={setSelectedBankId}
+              onToggleBankSelection={toggleBankSelection}
+              onSaveCustomConfig={saveCustomBankConfig}
+              effectiveVehiclesValue={effectiveVehiclesValue}
+            />
+          </>
+        );
+      
+      case 5: // Comparación
+        return (
+          <CreditPreview
+            calculationPreview={calculationPreview}
+            vehiclesValue={vehiclesValue}
+            term={term}
+            useCustomRate={useCustomRate}
+            customRate={customRate}
+            useCustomCat={useCustomCat}
+            customCat={customCat}
+          />
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  // Obtener el título según el paso actual
+  const getStepTitle = () => {
+    switch(currentStep) {
+      case 1: return "Selección de Vehículos";
+      case 2: return "Configuración de Enganche";
+      case 3: return "Selección de Plazo";
+      case 4: return "Selección de Bancos";
+      case 5: return "Comparación de Opciones";
+      case 6: return "Tabla de Amortización";
+      default: return "Configuración del crédito";
+    }
+  };
+
   return (
     <motion.div 
       className="space-y-8"
@@ -572,90 +756,24 @@ const CreditForm = ({ vehiclesValue, vehicles = [], onCreditConfigChange, onCalc
       variants={formAnimation}
     >
       {/* Breadcrumb de línea de tiempo del proceso */}
-      <CreditTimeline currentStep={1} />
+      <CreditTimeline currentStep={currentStep} />
       
       <motion.div 
         className="govuk-form-section"
         variants={sectionAnimation}
+        key={`step-${currentStep}`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
       >
-        <h3 className="govuk-form-section-title">Configuración del crédito</h3>
+        <h3 className="govuk-form-section-title">{getStepTitle()}</h3>
         
-        {/* Componente de selección de vehículos */}
-        <VehicleSelectionPanel
-          vehicles={vehicles}
-          selectedVehicles={selectedVehicles}
-          onVehicleToggle={toggleVehicleSelection}
-          effectiveVehiclesValue={effectiveVehiclesValue}
-        />
-        
-        {/* Componente de configuración de enganche */}
-        <DownPaymentConfig
-          downPaymentPercentage={downPaymentPercentage}
-          downPaymentAmount={downPaymentAmount}
-          effectiveVehiclesValue={effectiveVehiclesValue}
-          financingAmount={financingAmount}
-          validationError={validationError}
-          onPercentageChange={handleDownPaymentPercentageChange}
-          onAmountChange={handleDownPaymentAmountChange}
-        />
-        
-        {effectiveVehiclesValue > 0 && (
-          <TermSelector
-            term={term}
-            financingAmount={financingAmount}
-            onTermChange={setTerm}
-          />
-        )}
-        
-        {/* Configuración de tasa de interés personalizada */}
-        <CustomRateConfig
-          useCustomRate={useCustomRate}
-          customRate={customRate}
-          useCustomCat={useCustomCat}
-          customCat={customCat}
-          validationError={validationError}
-          onToggleCustomRate={handleToggleCustomRate}
-          onCustomRateChange={handleCustomRateChange}
-          onToggleCustomCat={handleToggleCustomCat}
-          onCustomCatChange={handleCustomCatChange}
-        />
-        
-        {effectiveVehiclesValue <= 0 ? (
-          <div className="govuk-warning-text">
-            <span className="govuk-warning-text__icon">!</span>
-            <strong className="govuk-warning-text__text">
-              Primero debes agregar vehículos para configurar el crédito.
-            </strong>
-          </div>
-        ) : (
-          <BankSelectionGrid
-            selectedBankId={selectedBankId}
-            selectedBanks={selectedBanks}
-            customizedBanks={customizedBanks}
-            useCustomRate={useCustomRate}
-            customRate={customRate}
-            useCustomCat={useCustomCat}
-            customCat={customCat}
-            onSelectBank={setSelectedBankId}
-            onToggleBankSelection={toggleBankSelection}
-            onSaveCustomConfig={saveCustomBankConfig}
-            effectiveVehiclesValue={effectiveVehiclesValue}
-          />
-        )}
+        {/* Contenido dinámico según el paso actual */}
+        <AnimatePresence mode="wait">
+          {renderStepContent()}
+        </AnimatePresence>
       </motion.div>
-      
-      {/* Componente de vista previa de crédito */}
-      {calculationPreview && (
-        <CreditPreview
-          calculationPreview={calculationPreview}
-          vehiclesValue={vehiclesValue}
-          term={term}
-          useCustomRate={useCustomRate}
-          customRate={customRate}
-          useCustomCat={useCustomCat}
-          customCat={customCat}
-        />
-      )}
       
       {/* Componente de alerta de error */}
       <AnimatePresence>
@@ -670,13 +788,43 @@ const CreditForm = ({ vehiclesValue, vehicles = [], onCreditConfigChange, onCalc
         )}
       </AnimatePresence>
       
-      {/* Componente de botones de acción */}
-      <ActionButtons
-        selectedBanks={selectedBanks}
-        effectiveVehiclesValue={effectiveVehiclesValue}
-        validationError={validationError}
-        onCalculate={handleCalculate}
-      />
+      {/* Navegación y botones de acción */}
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <div className="flex gap-2">
+          {currentStep > 1 && (
+            <motion.button
+              onClick={handlePrevStep}
+              className="govuk-button-secondary flex items-center"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              <FaArrowLeft className="h-4 w-4 mr-2" />
+              Anterior
+            </motion.button>
+          )}
+          
+          {currentStep < 5 && (
+            <motion.button
+              onClick={handleNextStep}
+              className={`govuk-button flex items-center ${stepValidation[currentStep] ? '' : 'opacity-70'}`}
+              whileHover={stepValidation[currentStep] ? { scale: 1.03 } : {}}
+              whileTap={stepValidation[currentStep] ? { scale: 0.97 } : {}}
+            >
+              Siguiente
+              <FaArrowRight className="h-4 w-4 ml-2" />
+            </motion.button>
+          )}
+        </div>
+        
+        {currentStep === 5 && (
+          <ActionButtons
+            selectedBanks={selectedBanks}
+            effectiveVehiclesValue={effectiveVehiclesValue}
+            validationError={validationError}
+            onCalculate={handleCalculate}
+          />
+        )}
+      </div>
     </motion.div>
   );
 };

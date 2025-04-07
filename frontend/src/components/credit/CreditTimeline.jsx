@@ -89,7 +89,7 @@ const CreditTimeline = ({ currentStep = 1 }) => {
       </div>
 
       {/* Estilo CSS para ocultar la barra de desplazamiento en móvil */}
-      <style jsx>{`
+      <style jsx="true">{`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
         }
