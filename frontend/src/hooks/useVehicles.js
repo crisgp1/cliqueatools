@@ -14,11 +14,11 @@ const useVehicles = (token, onVehicleChange = null) => {
   const [loading, setLoading] = useState(false);
   // Estado para manejar errores
   const [error, setError] = useState(null);
-  // Estado para paginación
+  // Estado para paginación - aumentado el límite para mostrar todos los vehículos a la vez
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
-    limit: 20,
+    limit: 1000, // Límite muy alto para asegurar que todos los vehículos se muestren
     totalPages: 1
   });
 
@@ -56,12 +56,11 @@ const useVehicles = (token, onVehicleChange = null) => {
    * @param {Object} options - Opciones de paginación
    */
   const loadVehicles = useCallback(async (options = {}) => {
-    if (!token || updatingStateRef.current) return;
+    if (!token) return;
     
     try {
       setLoading(true);
       setError(null);
-      updatingStateRef.current = true;
       
       const response = await fetchVehicles(token, options);
       
@@ -75,19 +74,10 @@ const useVehicles = (token, onVehicleChange = null) => {
       });
       const uniqueVehicles = Array.from(vehicleMap.values());
       
-      // Verificar si realmente hay cambios antes de actualizar el estado
-      const hasChanges = uniqueVehicles.length !== vehicles.length || 
-        uniqueVehicles.some(newVehicle => 
-          !vehicles.some(existingVehicle => isVehicleEqual(existingVehicle, newVehicle))
-        );
-        
-      if (hasChanges) {
-        console.log('[useVehicles] Actualizando lista de vehículos con cambios detectados');
-        setVehicles(uniqueVehicles || []);
-        setPagination(paginationData || pagination);
-      } else {
-        console.log('[useVehicles] Omitiendo actualización redundante de vehículos');
-      }
+      // Siempre actualizar la lista de vehículos para asegurar que se muestren todos
+      console.log('[useVehicles] Actualizando lista completa de vehículos');
+      setVehicles(uniqueVehicles || []);
+      setPagination(paginationData || pagination);
       
       setLoading(false);
       

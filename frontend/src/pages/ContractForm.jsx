@@ -10,6 +10,7 @@ import ErrorSummary from '../components/contract/utils/ErrorSummary';
 // Import modular components
 import GeneralInfoSection from '../components/contract/form/GeneralInfoSection';
 import BuyerInfoSection from '../components/contract/form/BuyerInfoSection';
+import VehicleSelector from '../components/contract/form/VehicleSelector';
 import VehicleInfoSection from '../components/contract/form/VehicleInfoSection';
 import PaymentInfoSection from '../components/contract/form/PaymentInfoSection';
 import ObservationsSection from '../components/contract/form/ObservationsSection';
@@ -66,14 +67,14 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     // Información del vehículo
     marca: vehicles.length > 0 ? vehicles[0].marca || '' : '',
     modelo: vehicles.length > 0 ? vehicles[0].modelo || '' : '',
-    color: '',
-    tipo: '',
-    numeroMotor: '',
-    numeroSerie: '',
-    placas: '',
-    numeroCirculacion: '',
-    numeroFactura: '',
-    refrendos: '',
+    color: vehicles.length > 0 ? vehicles[0].color || '' : '',
+    tipo: vehicles.length > 0 ? vehicles[0].tipo || '' : '',
+    numeroMotor: vehicles.length > 0 ? vehicles[0].numero_motor || '' : '',
+    numeroSerie: vehicles.length > 0 ? vehicles[0].numero_serie || '' : '',
+    placas: vehicles.length > 0 ? vehicles[0].placas || '' : '',
+    numeroCirculacion: vehicles.length > 0 ? vehicles[0].numero_circulacion || '' : '',
+    numeroFactura: vehicles.length > 0 ? vehicles[0].numero_factura || '' : '',
+    refrendos: vehicles.length > 0 ? vehicles[0].refrendos || '' : '',
     rfcVehiculo: '',
 
     // Información de pago
@@ -93,6 +94,9 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   const [validationErrors, setValidationErrors] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [showValidationError, setShowValidationError] = useState(false);
+  
+  // Vehículo seleccionado actualmente
+  const [selectedVehicle, setSelectedVehicle] = useState(vehicles.length > 0 ? vehicles[0] : null);
   
   // Signature state
   const [signatures, setSignatures] = useState({
@@ -162,6 +166,30 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     }));
     setShowIdCopyModal(false);
   }, []);
+  
+  // Manejar la selección de vehículo
+  const handleVehicleSelect = useCallback((vehicle) => {
+    if (!vehicle) return;
+    
+    setSelectedVehicle(vehicle);
+    
+    // Actualizar los datos del contrato con la información del vehículo seleccionado
+    setContractData(prevData => ({
+      ...prevData,
+      marca: vehicle.marca || '',
+      modelo: vehicle.modelo || '',
+      color: vehicle.color || '',
+      tipo: vehicle.tipo || '',
+      numeroMotor: vehicle.numero_motor || '',
+      numeroSerie: vehicle.numero_serie || '',
+      placas: vehicle.placas || '',
+      numeroCirculacion: vehicle.numero_circulacion || '',
+      numeroFactura: vehicle.numero_factura || '',
+      refrendos: vehicle.refrendos || '',
+      precioTotal: vehicle.valor || 0,
+      precioTotalTexto: numeroATexto(vehicle.valor || 0)
+    }));
+  }, []);
 
   // Animation variants for the form container
   const formAnimation = {
@@ -222,6 +250,16 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
             setShowAddressProofModal={setShowAddressProofModal}
             errors={fieldErrors}
           />
+
+          {/* Selector de Vehículos */}
+          <div className="govuk-form-section">
+            <h3 className="govuk-form-section-title">Selección del Vehículo</h3>
+            <VehicleSelector 
+              vehicles={vehicles}
+              selectedVehicle={selectedVehicle}
+              onVehicleSelect={handleVehicleSelect}
+            />
+          </div>
 
           {/* Vehicle Information Section */}
           <VehicleInfoSection 

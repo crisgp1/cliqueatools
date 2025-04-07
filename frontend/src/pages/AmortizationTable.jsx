@@ -42,6 +42,41 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
   // Estado para controlar el número de pagos visibles
   const [visiblePayments, setVisiblePayments] = useState(12);
   
+  // Filtrar vehículos para mostrar solo los que están incluidos en el financiamiento actual
+  // Esto soluciona el problema de que se muestran todos los vehículos en lugar de solo los seleccionados
+  const filteredVehicles = (() => {
+    // Si hay configuración de vehículos seleccionados en creditConfig, usarlos
+    if (creditConfig.selectedVehicles && creditConfig.selectedVehicles.length > 0) {
+      return vehicles.filter(vehicle => 
+        creditConfig.selectedVehicles.some(selectedVehicle => selectedVehicle.id === vehicle.id)
+      );
+    } 
+    
+    // Si el monto financiado coincide con algún vehículo específico, mostrar solo ese
+    else if (vehicles.length > 0 && creditConfig.financingAmount > 0) {
+      // Calcular el valor total de los vehículos
+      const totalValue = vehicles.reduce((sum, vehicle) => sum + vehicle.valor, 0);
+      
+      // Si el monto financiado + enganche coincide aproximadamente con el valor total,
+      // asumir que todos los vehículos están incluidos
+      const totalFinancing = creditConfig.financingAmount + creditConfig.downPaymentAmount;
+      
+      // Si el total coincide aproximadamente (con margen de $10), mostrar todos los vehículos
+      if (Math.abs(totalFinancing - totalValue) < 10) {
+        return vehicles;
+      }
+      
+      // Si no, intentar encontrar los vehículos individuales que suman el monto financiado
+      // Para simplificar, mostraremos el primer vehículo si solo hay uno
+      if (vehicles.length === 1) {
+        return vehicles;
+      }
+    }
+    
+    // En cualquier otro caso, mostrar todos los vehículos (comportamiento original)
+    return vehicles;
+  })();
+  
   // Determinar la tasa de interés a utilizar (personalizada o del banco)
   const effectiveRate = creditConfig.useCustomRate ? creditConfig.customRate : bank.tasa;
   
@@ -150,21 +185,45 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
   // Manejar descarga de PDF
   const handleDownloadPDF = () => {
     try {
-      const doc = new jsPDF();
+      // Crear documento PDF orientación portrait, unidades en mm, formato A4
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
       
-      // Añadir logo y encabezado
-      const imgData = logoCliquealo;
-      doc.addImage(imgData, 'PNG', 105 - 15, 10, 30, 15, undefined, 'FAST');
+      // Agregar metadatos al documento
+      doc.setProperties({
+        title: `Tabla de Amortización - ${bank.nombre}`,
+        subject: 'Tabla de Amortización de Crédito Automotriz',
+        author: 'Cliquéalo.mx',
+        creator: 'Simulador de Crédito Automotriz'
+      });
+      
+      // Definir constantes para posicionamiento
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const centerX = pageWidth / 2;
+      
+      // Añadir logo y encabezado - usando try/catch específico para manejo de imagen
+      try {
+        // Convertir la imagen importada a base64 o usar URL
+        const imgData = logoCliquealo;
+        doc.addImage(imgData, 'PNG', centerX - 15, 10, 30, 15, undefined, 'FAST');
+      } catch (imgError) {
+        console.warn('No se pudo cargar el logo:', imgError);
+        // Continuar sin la imagen si falla
+      }
+      
       doc.setFontSize(16);
-      doc.text('Tabla de Amortización', 105, 35, { align: 'center' });
+      doc.text('Tabla de Amortización', centerX, 35, { align: 'center' });
       
       // Detalles del banco y fecha
       doc.setFontSize(10);
       const bankText = `Banco: ${bank.nombre} | Generado el: ${new Date().toLocaleDateString('es-MX')}`;
-      doc.text(bankText, 105, 42, { align: 'center' });
+      doc.text(bankText, centerX, 42, { align: 'center' });
       
       if (creditConfig.useCustomRate) {
-        doc.text(`(Tasa personalizada: ${formatPercentage(creditConfig.customRate)})`, 105, 48, { align: 'center' });
+        doc.text(`(Tasa personalizada: ${formatPercentage(creditConfig.customRate)})`, centerX, 48, { align: 'center' });
       }
       
       // Información del cliente
@@ -221,17 +280,17 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
       
       // Vehículos financiados (si hay)
       yPos = 90;
-      if (vehicles && vehicles.length > 0) {
+      if (filteredVehicles && filteredVehicles.length > 0) {
         doc.setFontSize(12);
         doc.text('Vehículos financiados', 14, yPos);
         yPos += 5;
         
         const vehicleTableColumns = ['Descripción', 'Marca/Modelo', 'Año', 'Valor'];
-        const vehicleTableRows = vehicles.map(vehicle => [
-          vehicle.descripcion,
-          `${vehicle.marca} ${vehicle.modelo}`,
-          vehicle.año,
-          formatCurrency(vehicle.valor)
+        const vehicleTableRows = filteredVehicles.map(vehicle => [
+          vehicle.descripcion || '',
+          `${vehicle.marca || ''} ${vehicle.modelo || ''}`,
+          vehicle.año || '',
+          formatCurrency(vehicle.valor || 0)
         ]);
         
         doc.autoTable({
@@ -253,40 +312,51 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
       yPos += 5;
       
       const amortizationColumns = ['No. Pago', 'Fecha', 'Pago', 'Capital', 'Interés', 'Saldo'];
-      const amortizationRows = amortizationData.map(row => [
-        row.paymentNumber,
-        formatDate(row.paymentDate),
-        formatCurrency(row.payment),
-        formatCurrency(row.principalPayment),
-        formatCurrency(row.interestPayment),
-        formatCurrency(row.balance)
-      ]);
       
-      doc.autoTable({
-        head: [amortizationColumns],
-        body: amortizationRows,
-        startY: yPos,
-        margin: { left: 14 },
-        theme: 'grid',
-        headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
-        styles: { fontSize: 8 },
-        didDrawPage: function (data) {
-          // Pie de página
-          const pageSize = doc.internal.pageSize;
-          const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
-          doc.setFontSize(8);
-          doc.text('Este documento es informativo y no representa un contrato de crédito oficial.', 105, pageHeight - 20, { align: 'center' });
-          doc.text(`Consulta los términos y condiciones con ${bank.nombre} antes de formalizar tu crédito.`, 105, pageHeight - 15, { align: 'center' });
-          doc.text('Generado por Cliquéalo.mx - Simulador de Crédito Automotriz', 105, pageHeight - 10, { align: 'center' });
-        }
-      });
+      // Verificar que amortizationData sea válido y tenga elementos
+      if (amortizationData && amortizationData.length > 0) {
+        const amortizationRows = amortizationData.map(row => [
+          row.paymentNumber,
+          formatDate(row.paymentDate),
+          formatCurrency(row.payment),
+          formatCurrency(row.principalPayment),
+          formatCurrency(row.interestPayment),
+          formatCurrency(row.balance)
+        ]);
+        
+        doc.autoTable({
+          head: [amortizationColumns],
+          body: amortizationRows,
+          startY: yPos,
+          margin: { left: 14 },
+          theme: 'grid',
+          headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
+          styles: { fontSize: 8 },
+          didDrawPage: function (data) {
+            // Pie de página
+            const pageSize = doc.internal.pageSize;
+            const pageHeight = pageSize.getHeight();
+            doc.setFontSize(8);
+            doc.text('Este documento es informativo y no representa un contrato de crédito oficial.', centerX, pageHeight - 20, { align: 'center' });
+            doc.text(`Consulta los términos y condiciones con ${bank.nombre} antes de formalizar tu crédito.`, centerX, pageHeight - 15, { align: 'center' });
+            doc.text('Generado por Cliquéalo.mx - Simulador de Crédito Automotriz', centerX, pageHeight - 10, { align: 'center' });
+          }
+        });
+      } else {
+        // Si no hay datos, mostrar mensaje
+        doc.text("No hay datos de amortización disponibles", 14, yPos + 10);
+      }
       
-      // Guardar PDF
-      doc.save(`Tabla_Amortizacion_${bank.nombre}_${new Date().toISOString().split('T')[0]}.pdf`);
+      // Guardar PDF con nombre específico y fecha
+      const fechaArchivo = new Date().toISOString().split('T')[0];
+      const nombreArchivo = `Tabla_Amortizacion_${bank.nombre.replace(/\s+/g, '_')}_${fechaArchivo}.pdf`;
+      
+      doc.save(nombreArchivo);
       
       console.log('PDF generado y descargado correctamente');
     } catch (error) {
       console.error('Error al generar el PDF:', error);
+      alert('Hubo un error al generar el PDF. Por favor, intente nuevamente.');
     }
   };
   
@@ -368,7 +438,7 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
         </div>
         
         {/* Nuevo panel de resumen del vehículo */}
-        {vehicles && vehicles.length > 0 && (
+        {filteredVehicles && filteredVehicles.length > 0 && (
           <div className="mb-8 bg-gray-50 border-2 border-gray-300 rounded-md overflow-hidden">
             <div className="bg-gray-700 text-white p-3">
               <h3 className="font-bold text-lg">Vehículo Financiado</h3>
@@ -379,7 +449,7 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Información del vehículo */}
                 <div className="space-y-2">
-                  {vehicles.map((vehicle) => (
+                  {filteredVehicles.map((vehicle) => (
                     <div key={vehicle.id} className="border border-gray-200 p-3 rounded bg-white">
                       <div className="font-bold text-gray-800">{vehicle.descripcion}</div>
                       <div className="text-sm text-gray-600">{vehicle.marca} {vehicle.modelo} ({vehicle.año})</div>

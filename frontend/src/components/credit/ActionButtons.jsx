@@ -14,7 +14,7 @@ import { IoPlayCircleOutline, IoGitCompareOutline } from 'react-icons/io5';
 const ActionButtons = ({
   selectedBanks,
   effectiveVehiclesValue,
-  validationError,
+  validationError, 
   onCalculate
 }) => {
   return (

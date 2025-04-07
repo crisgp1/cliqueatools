@@ -39,6 +39,7 @@ import CustomRateConfig from '../components/credit/CustomRateConfig';
 import BankSelectionGrid from '../components/credit/BankSelectionGrid';
 import CreditPreview from '../components/credit/CreditPreview';
 import ActionButtons from '../components/credit/ActionButtons';
+import CreditTimeline from '../components/credit/CreditTimeline';
 
 // Importación de utilidades y constantes
 import { calculateMonthlyPayment } from '../components/credit/utils/CreditUtils';
@@ -570,6 +571,9 @@ const CreditForm = ({ vehiclesValue, vehicles = [], onCreditConfigChange, onCalc
       animate="visible"
       variants={formAnimation}
     >
+      {/* Breadcrumb de línea de tiempo del proceso */}
+      <CreditTimeline currentStep={1} />
+      
       <motion.div 
         className="govuk-form-section"
         variants={sectionAnimation}

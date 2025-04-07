@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react'
+import useVehicleStore from './store/vehicleStore'
 import VehicleForm from './pages/VehicleForm'
 import ClientForm from './pages/ClientForm'
 import Login from './pages/Login'
@@ -48,8 +49,8 @@ const MainApp = () => {
   const { user, logout } = useContext(AuthContext);
   // Estado para mostrar el preloader de cierre de sesión
   const [showLogoutAnimation, setShowLogoutAnimation] = useState(false);
-  // Estado para gestionar vehículos
-  const [vehicles, setVehicles] = useState([])
+  // Acceder al store centralizado de vehículos
+  const { vehicles, getTotalValue } = useVehicleStore()
   
   // Estado para datos del cliente
   const [client, setClient] = useState({
@@ -92,7 +93,7 @@ const MainApp = () => {
   // Calcular valor total de vehículos
   const totalVehicleValue = vehicles.reduce((sum, vehicle) => sum + vehicle.valor, 0)
 
-  // Manejar cerrar sesión
+  // Manejar cerrar sesión con animación mejorada
   const handleLogout = () => {
     // Mostrar animación de cierre de sesión
     setShowLogoutAnimation(true);
@@ -100,14 +101,17 @@ const MainApp = () => {
     // Esperar a que se complete la animación antes de cerrar la sesión
     setTimeout(() => {
       logout();
-      setShowLogoutAnimation(false);
-    }, 1500);
+      // Mantenemos la animación visible un poco más para una mejor experiencia
+      setTimeout(() => {
+        setShowLogoutAnimation(false);
+      }, 500);
+    }, 2000);
   };
   
   // Secciones disponibles para la navegación
   const sections = [
     { id: 'home', name: 'Inicio', icon: 'home' },
-    { id: 'vehicles', name: 'Vehículos', icon: 'car', count: vehicles.length },
+    { id: 'vehicles', name: 'Vehículos', icon: 'car' },
     // Cliente deshabilitado según requerimiento
     { id: 'credit', name: 'Configurar Crédito', icon: 'credit-card', disabled: vehicles.length === 0 },
     { id: 'results', name: 'Resultados', icon: 'chart', disabled: creditResults.length === 0 },
@@ -124,18 +128,7 @@ const MainApp = () => {
     }))
   }, [totalVehicleValue])
   
-  // Funciones para gestionar vehículos
-  const handleAddVehicle = (vehicle) => {
-    setVehicles([...vehicles, vehicle])
-  }
-  
-  const handleRemoveVehicle = (id) => {
-    setVehicles(vehicles.filter(vehicle => vehicle.id !== id))
-  }
-  
-  const handleUpdateVehicle = (id, updatedVehicle) => {
-    setVehicles(vehicles.map(vehicle => vehicle.id === id ? updatedVehicle : vehicle))
-  }
+  // Las funciones de gestión de vehículos ahora se manejan en el store central
   
   // Función para actualizar datos del cliente
   const handleClientChange = (updatedClient) => {
@@ -210,12 +203,7 @@ const MainApp = () => {
                 Gestión de Vehículos
               </span>
             </h2>
-            <VehicleForm 
-              vehicles={vehicles}
-              onAddVehicle={handleAddVehicle}
-              onUpdateVehicle={handleUpdateVehicle}
-              onRemoveVehicle={handleRemoveVehicle}
-            />
+            <VehicleForm />
           </div>
         )
       case 'credit':
@@ -292,7 +280,7 @@ const MainApp = () => {
               <span className="inline-flex items-center">
                 <IoDocumentTextOutline className="h-6 w-6 mr-2 text-orange-600" />
                 Contrato de Compraventa
-              </span>
+              </span> 
             </h2>
             <ContractForm 
               vehicles={vehicles}
@@ -463,20 +451,47 @@ const MainApp = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Preloader de cierre de sesión */}
-      {showLogoutAnimation && (
-        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-          <div className="w-52 h-52">
-            <Lottie 
-              animationData={logoutAnimation} 
-              loop={true}
-            />
-          </div>
-          <div className="mt-6 text-blue-800 font-semibold text-lg">
-            Cerrando sesión...
-          </div>
-        </div>
-      )}
+      {/* Preloader de cierre de sesión con animación mejorada */}
+      <AnimatePresence>
+        {showLogoutAnimation && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center"
+          >
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.5, type: "spring", stiffness: 100 }}
+              className="w-64 h-64"
+            >
+              <Lottie 
+                animationData={logoutAnimation} 
+                loop={true}
+                className="w-full h-full"
+              />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="mt-6 font-bold text-xl text-blue-800"
+            >
+              Cerrando sesión...
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="mt-3 text-gray-600 max-w-xs text-center"
+            >
+              Gracias por usar nuestra plataforma
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Header */}
       <header className="bg-gray-800 shadow-md py-3 sticky top-0 z-20">
         <div className="container mx-auto px-4">

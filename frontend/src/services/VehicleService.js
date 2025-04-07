@@ -12,7 +12,7 @@
  */
 export const fetchVehicles = async (token, options = {}) => {
   try {
-    const { page = 1, limit = 20 } = options;
+    const { page = 1, limit = 100 } = options;
     const url = new URL(`${import.meta.env.VITE_API_URL}/vehiculos`);
     
     // Añadir parámetros de paginación a la URL
