@@ -148,8 +148,8 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
       
       // Update general address fields if provided
       if (state || city || colony || zipCode || street || houseNumber || fullAddress) {
-       // updates.estado = state || prevData.estado;
-      //  updates.ciudad = city || prevData.ciudad;
+        updates.estado = state || prevData.estado;
+        updates.ciudad = city || prevData.ciudad;
         updates.colonia = colony || prevData.colonia;
         updates.codigoPostal = zipCode || prevData.codigoPostal;
         updates.calle = street || prevData.calle;
