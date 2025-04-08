@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import Radar from 'radar-sdk-js';
 import 'radar-sdk-js/dist/radar.css';
 import { formatAddressData } from '../../services/RadarService';
+import './RadarAddressAutocomplete.css';
 
 /**
  * Componente para autocompletar direcciones usando Radar API
@@ -38,8 +39,11 @@ const RadarAddressAutocomplete = ({
 
   // Inicializar Radar cuando el componente se monta
   useEffect(() => {
+    // Evitar inicializaciones múltiples
     if (hasInitialized) return;
-
+    
+    let isMounted = true;
+    
     const initializeRadar = async () => {
       // Inicializar con la llave de API desde las variables de entorno
       const apiKey = import.meta.env.VITE_RADAR_PUBLISHABLE_KEY;
@@ -49,14 +53,18 @@ const RadarAddressAutocomplete = ({
       }
 
       try {
-        // Inicializar Radar SDK
-        Radar.initialize(apiKey);
+        // Inicializar Radar SDK solo una vez a nivel global
+        if (!window.radarInitialized) {
+          Radar.initialize(apiKey);
+          window.radarInitialized = true;
+          console.log("Inicializando Radar SDK con API key:", apiKey);
+        }
         
         // Coordenadas por defecto para México
         const defaultCoordinates = [-99.1332, 19.4326]; // CDMX
 
         // Crear el mapa si está habilitado
-        if (showMap && mapContainerRef.current) {
+        if (showMap && mapContainerRef.current && isMounted) {
           const map = Radar.ui.map({
             container: mapContainerRef.current,
             style: 'radar-default-v1',
@@ -72,13 +80,30 @@ const RadarAddressAutocomplete = ({
         }
 
         // Inicializar Radar autocomplete
-        if (containerRef.current) {
-          // Configurar el autocompletado
+        if (containerRef.current && isMounted) {
+          console.log("Inicializando autocomplete de Radar");
+          
+          // Limpiar autocomplete existente si lo hay
+          if (autocompleteRef.current) {
+            autocompleteRef.current.remove();
+          }
+          
+          // Limpiar el contenedor para evitar duplicados
+          containerRef.current.innerHTML = '';
+          
+          // Configurar el autocompletado con opciones mejoradas
           autocompleteRef.current = Radar.ui.autocomplete({
             container: containerRef.current,
             width: '100%',
             placeholder: 'Ingresa una dirección...',
+            country: 'mx', // Establecer México como país por defecto
+            layers: ['address'], // Solo buscar direcciones
+            debounce: 300, // Tiempo de espera entre pulsaciones de teclas
+            limit: 10, // Más resultados
+            showMarkers: false,
             onSelection: (address) => {
+              if (!isMounted) return;
+              
               // Formatear la dirección seleccionada
               const formattedAddress = formatAddressData(address);
               setSelectedAddress(formattedAddress);
@@ -102,9 +127,19 @@ const RadarAddressAutocomplete = ({
               }
             },
           });
+          
+          // Establecer el valor inicial si hay uno
+          if (value) {
+            const inputElement = containerRef.current.querySelector('input');
+            if (inputElement) {
+              inputElement.value = value;
+            }
+          }
+          
+          if (isMounted) {
+            setHasInitialized(true);
+          }
         }
-
-        setHasInitialized(true);
       } catch (error) {
         console.error('Error al inicializar Radar:', error);
       }
@@ -114,11 +149,16 @@ const RadarAddressAutocomplete = ({
 
     // Limpieza al desmontar
     return () => {
+      isMounted = false;
       if (autocompleteRef.current) {
-        autocompleteRef.current.remove();
+        try {
+          autocompleteRef.current.remove();
+        } catch (error) {
+          console.error('Error al eliminar autocomplete:', error);
+        }
       }
     };
-  }, [onChange, inputId, showMap, hasInitialized]);
+  }, [value, onChange, inputId, showMap]); // Eliminar hasInitialized para evitar loop
 
   // Animación
   const itemAnimation = {
@@ -137,7 +177,11 @@ const RadarAddressAutocomplete = ({
         <div 
           ref={containerRef} 
           className={`radar-autocomplete-container ${error ? 'border-red-500' : ''}`}
-          style={{ width: '100%' }}
+          style={{ 
+            width: '100%', 
+            minHeight: '42px',
+            position: 'relative'
+          }}
         />
         {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
       </div>

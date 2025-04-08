@@ -65,6 +65,11 @@ const GeneralInfoSection = memo(({
       if (handleChange) {
         handleChange({ target: { name: 'direccionCompleta', value: addressValue } });
       }
+      
+      // Si el texto tiene longitud suficiente, también intentar buscar direcciones
+      if (addressValue && addressValue.length >= 3) {
+        searchAddresses(addressValue);
+      }
     }
   };
   
@@ -73,8 +78,11 @@ const GeneralInfoSection = memo(({
     const value = e.target.value;
     setAddressValue(value);
     
-    // Buscar direcciones
-    searchAddresses(value);
+    // Buscar direcciones si hay suficiente texto
+    if (value && value.length >= 3) {
+      searchAddresses(value);
+      console.log("Buscando direcciones con:", value);
+    }
     
     // Actualizar direccionCompleta
     handleChange({ 

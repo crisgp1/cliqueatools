@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { fetchVehicles, createVehicle, updateVehicle, deleteVehicle } from '../services/VehicleService';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
+// Store que no depende de React hooks
 const useVehicleStore = create((set, get) => ({
+  // Necesitamos almacenar una referencia al handleApiResponse aquí
+  // porque no podemos usar useContext directamente en el store
+  handleApiResponse: null,
+  setHandleApiResponse: (handler) => set({ handleApiResponse: handler }),
   vehicles: [],
   loading: false,
   error: null,
@@ -13,7 +20,7 @@ const useVehicleStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const response = await fetchVehicles(token, options);
+      const response = await fetchVehicles(token, options, get().handleApiResponse);
       
       // Extraer vehículos
       const { vehicles: vehiclesList } = response;
@@ -49,7 +56,7 @@ const useVehicleStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const newVehicle = await createVehicle(token, vehicleData);
+      const newVehicle = await createVehicle(token, vehicleData, get().handleApiResponse);
       
       // Actualizar el estado añadiendo el nuevo vehículo
       set(state => ({
@@ -78,7 +85,7 @@ const useVehicleStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const updatedVehicle = await updateVehicle(token, vehicleData);
+      const updatedVehicle = await updateVehicle(token, vehicleData, get().handleApiResponse);
       
       // Actualizar el estado reemplazando el vehículo actualizado
       set(state => ({
@@ -109,7 +116,7 @@ const useVehicleStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      await deleteVehicle(token, id);
+      await deleteVehicle(token, id, get().handleApiResponse);
       
       // Actualizar el estado filtrando el vehículo eliminado
       set(state => ({
@@ -136,5 +143,18 @@ const useVehicleStore = create((set, get) => ({
   // Limpiar errores
   clearError: () => set({ error: null })
 }));
+
+// Wrapper que inicializa el handler de API response
+export const useVehicleStoreWithAuth = () => {
+  const vehicleStore = useVehicleStore();
+  const { handleApiResponse } = useContext(AuthContext);
+  
+  // Configurar el handler de API response si ha cambiado
+  if (handleApiResponse !== vehicleStore.handleApiResponse) {
+    vehicleStore.setHandleApiResponse(handleApiResponse);
+  }
+  
+  return vehicleStore;
+};
 
 export default useVehicleStore;

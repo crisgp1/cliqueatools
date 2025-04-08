@@ -1,4 +1,6 @@
 import { useState, useEffect, useContext } from 'react'
+import NotificationContainer from './components/common/NotificationContainer'
+import { registerRedirectFunction } from './utils/apiUtils'
 import useVehicleStore from './store/vehicleStore'
 import VehicleForm from './pages/VehicleForm'
 import ClientFormPage from './pages/ClientForm'
@@ -740,7 +742,40 @@ function App() {
   // Estado para controlar si se muestra la página de login o de registro
   const [showCreateAccount, setShowCreateAccount] = useState(false);
   // Obtener estado y funciones de autenticación
-  const { isAuthenticated, loading } = useContext(AuthContext);
+  const { 
+    isAuthenticated, 
+    token, 
+    loading, 
+    shouldRedirectToLogin,
+    forceRedirectToLogin
+  } = useContext(AuthContext);
+  
+  // Estado para forzar renderizados cuando cambia el estado de autenticación
+  const [authState, setAuthState] = useState(false);
+  
+  // Registrar la función de redirección con las utilidades de API
+  useEffect(() => {
+    if (forceRedirectToLogin) {
+      // Registrar la función para que apiUtils pueda usarla cuando detecte un 401
+      registerRedirectFunction(forceRedirectToLogin);
+      console.log('Función de redirección registrada con las utilidades de API');
+    }
+  }, [forceRedirectToLogin]);
+  
+  // Efecto para detectar cambios en el estado de autenticación
+  useEffect(() => {
+    // Verificar redirección forzada primero
+    if (shouldRedirectToLogin) {
+      // Si hay una redirección forzada, establecer el estado de autenticación a falso
+      setAuthState(false);
+      return;
+    }
+    
+    // Usar el valor actual de isAuthenticated
+    const isAuth = isAuthenticated();
+    // Actualizar el estado de autenticación local
+    setAuthState(isAuth);
+  }, [isAuthenticated, token, shouldRedirectToLogin]); // Añadir shouldRedirectToLogin como dependencia
   
   // Mostrar indicador de carga mientras se verifica la autenticación
   if (loading) {
@@ -755,9 +790,13 @@ function App() {
   }
   
   return (
-    <AnimatePresence mode="wait">
+    <>
+      {/* Contenedor de notificaciones (siempre visible) */}
+      <NotificationContainer />
+      
+      <AnimatePresence mode="wait">
       {/* Si el usuario está autenticado, mostrar la aplicación principal con animación */}
-      {isAuthenticated() ? (
+      {authState ? (
         <motion.div
           key="main-app"
           initial={{ opacity: 0, y: 20 }}
@@ -785,7 +824,8 @@ function App() {
           </motion.div>
         )
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </>
   );
 }
 

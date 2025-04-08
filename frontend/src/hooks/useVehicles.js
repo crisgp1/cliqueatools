@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import { fetchVehicles, createVehicle, updateVehicle, deleteVehicle } from '../services/VehicleService';
-
+import { AuthContext } from '../context/AuthContext';
 /**
  * Hook personalizado para gestionar el estado y operaciones relacionadas con vehículos
  * @param {string} token - Token de autenticación del usuario
@@ -21,7 +21,8 @@ const useVehicles = (token, onVehicleChange = null) => {
     limit: 1000, // Límite muy alto para asegurar que todos los vehículos se muestren
     totalPages: 1
   });
-
+  // Obtener el manejador de respuesta de API del contexto de autenticación
+  const { handleApiResponse } = useContext(AuthContext);
   // Crear una referencia para onVehicleChange
   const onVehicleChangeRef = useRef(onVehicleChange);
   
@@ -62,7 +63,7 @@ const useVehicles = (token, onVehicleChange = null) => {
       setLoading(true);
       setError(null);
       
-      const response = await fetchVehicles(token, options);
+      const response = await fetchVehicles(token, options, handleApiResponse);
       
       // Extraer vehículos y metadata de paginación de la respuesta
       const { vehicles: vehiclesList, pagination: paginationData } = response;
@@ -95,7 +96,7 @@ const useVehicles = (token, onVehicleChange = null) => {
       setLoading(false);
       updatingStateRef.current = false;
     }
-  }, [token, vehicles, pagination]); // Añadimos vehicles para comparar si hay cambios
+  }, [token, vehicles, pagination, handleApiResponse]); // Añadimos handleApiResponse a las dependencias
 
   /**
    * Añade un nuevo vehículo
@@ -118,7 +119,7 @@ const useVehicles = (token, onVehicleChange = null) => {
       setError(null);
       updatingStateRef.current = true;
       
-      const newVehicle = await createVehicle(token, vehicleData);
+      const newVehicle = await createVehicle(token, vehicleData, handleApiResponse);
       
       // Verificar que el vehículo no exista ya en la lista
       if (!vehicles.some(v => v.id === newVehicle.id)) {
@@ -179,7 +180,7 @@ const useVehicles = (token, onVehicleChange = null) => {
       setError(null);
       updatingStateRef.current = true;
       
-      const updatedVehicle = await updateVehicle(token, vehicleData);
+      const updatedVehicle = await updateVehicle(token, vehicleData, handleApiResponse);
       
       // Actualizar la lista local
       setVehicles(prev => 
@@ -237,7 +238,7 @@ const useVehicles = (token, onVehicleChange = null) => {
       setError(null);
       updatingStateRef.current = true;
       
-      await deleteVehicle(token, id);
+      await deleteVehicle(token, id, handleApiResponse);
       
       // Actualizar la lista local
       setVehicles(prev => prev.filter(vehicle => vehicle.id !== id));
@@ -275,7 +276,7 @@ const useVehicles = (token, onVehicleChange = null) => {
     if (token) {
       loadVehicles();
     }
-  }, [token, loadVehicles]);
+  }, [token, loadVehicles, handleApiResponse]);
 
   return {
     vehicles,

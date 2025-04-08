@@ -1,6 +1,7 @@
 /**
  * Servicio para manejar las operaciones relacionadas con vehículos
  */
+import { fetchWithTokenCheck, createAuthHeaders } from '../utils/apiUtils';
 
 /**
  * Obtiene los vehículos del usuario con soporte para paginación
@@ -10,7 +11,7 @@
  * @param {number} options.limit - Número de registros por página (por defecto 20)
  * @returns {Promise} - Promesa con los datos de los vehículos y metadatos de paginación
  */
-export const fetchVehicles = async (token, options = {}) => {
+export const fetchVehicles = async (token, options = {}, handleApiResponse = null) => {
   try {
     const { page = 1, limit = 100 } = options;
     const url = new URL(`${import.meta.env.VITE_API_URL}/vehiculos`);
@@ -19,11 +20,9 @@ export const fetchVehicles = async (token, options = {}) => {
     url.searchParams.append('page', page);
     url.searchParams.append('limit', limit);
     
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await fetchWithTokenCheck(url, {
+      headers: createAuthHeaders(token, false)
+    }, handleApiResponse);
     
     if (!response.ok) {
       throw new Error('Error al cargar los vehículos');
@@ -63,7 +62,7 @@ export const fetchVehicles = async (token, options = {}) => {
  * @param {Object} vehicleData - Datos del vehículo
  * @returns {Promise} - Promesa con los datos del vehículo creado
  */
-export const createVehicle = async (token, vehicleData) => {
+export const createVehicle = async (token, vehicleData, handleApiResponse = null) => {
   try {
     // Preparar datos para enviar al backend
     const dataToSend = {
@@ -74,14 +73,11 @@ export const createVehicle = async (token, vehicleData) => {
       descripcion: vehicleData.descripcion || ''
     };
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/vehiculos`, {
+    const response = await fetchWithTokenCheck(`${import.meta.env.VITE_API_URL}/vehiculos`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: createAuthHeaders(token),
       body: JSON.stringify(dataToSend)
-    });
+    }, handleApiResponse);
     
     const data = await response.json();
     
@@ -112,7 +108,7 @@ export const createVehicle = async (token, vehicleData) => {
  * @param {Object} vehicleData - Datos del vehículo
  * @returns {Promise} - Promesa con los datos del vehículo actualizado
  */
-export const updateVehicle = async (token, vehicleData) => {
+export const updateVehicle = async (token, vehicleData, handleApiResponse = null) => {
   try {
     // Preparar datos para enviar al backend
     const dataToSend = {
@@ -123,14 +119,11 @@ export const updateVehicle = async (token, vehicleData) => {
       descripcion: vehicleData.descripcion || ''
     };
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/vehiculos/${vehicleData.id}`, {
+    const response = await fetchWithTokenCheck(`${import.meta.env.VITE_API_URL}/vehiculos/${vehicleData.id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: createAuthHeaders(token),
       body: JSON.stringify(dataToSend)
-    });
+    }, handleApiResponse);
     
     const data = await response.json();
     
@@ -151,14 +144,12 @@ export const updateVehicle = async (token, vehicleData) => {
  * @param {string|number} id - ID del vehículo a eliminar
  * @returns {Promise} - Promesa con el resultado de la operación
  */
-export const deleteVehicle = async (token, id) => {
+export const deleteVehicle = async (token, id, handleApiResponse = null) => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/vehiculos/${id}`, {
+    const response = await fetchWithTokenCheck(`${import.meta.env.VITE_API_URL}/vehiculos/${id}`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+      headers: createAuthHeaders(token, false)
+    }, handleApiResponse);
     
     if (!response.ok) {
       const data = await response.json();

@@ -19,13 +19,13 @@ const useAddressStore = create((set, get) => ({
     // Solo verificar una vez
     if (get().radarInitialized !== null) return;
     
-    const radarElement = document.querySelector('.radar-autocomplete');
+    const radarElement = document.querySelector('.radar-autocomplete-container');
     set({ radarInitialized: radarElement && radarElement.children.length > 0 });
     
     // Programar una verificación posterior si aún no está inicializado
     if (!radarElement || radarElement.children.length === 0) {
       setTimeout(() => {
-        const radarElementRetry = document.querySelector('.radar-autocomplete');
+        const radarElementRetry = document.querySelector('.radar-autocomplete-container');
         set({ radarInitialized: radarElementRetry && radarElementRetry.children.length > 0 });
       }, 3000);
     }
