@@ -101,7 +101,7 @@ export const contractSchema = Joi.object({
   placas: Joi.string().required().pattern(PLACAS_PATTERNS.GENERAL).messages({
     'string.empty': 'Las placas son obligatorias',
     'any.required': 'Las placas son obligatorias',
-    'string.pattern.base': 'Las placas no tienen un formato válido (5-7 caracteres alfanuméricos)'
+    'string.pattern.base': 'Las placas no tienen un formato válido (3-7 caracteres alfanuméricos o NA para sin placas)'
   }),
   numeroFactura: Joi.string().required().messages({
     'string.empty': 'El número de factura es obligatorio',

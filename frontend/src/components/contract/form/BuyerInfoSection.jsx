@@ -5,6 +5,7 @@ import { identificacionesComunes } from '../utils/ContractUtils';
 import RadarAddressAutocomplete from '../../common/RadarAddressAutocomplete';
 import { ErrorMessage, addErrorClass } from '../utils/ErrorSummary';
 import { validateMexicanField } from '../utils/ValidationSchema';
+import useAddressStore from '../../../store/addressStore';
 
 /**
  * Buyer Information section of the contract form
@@ -12,6 +13,7 @@ import { validateMexicanField } from '../utils/ValidationSchema';
  * @param {Object} props
  * @param {Object} props.formData - The contract form data
  * @param {Function} props.handleChange - Function to handle input changes
+ * @param {Function} props.handleLocationChange - Function to handle location changes
  * @param {boolean} props.idModalShown - Whether ID modal has been shown
  * @param {Function} props.setIdModalShown - Function to set ID modal shown state
  * @param {Function} props.setShowIdCopyModal - Function to show ID copy modal
@@ -21,6 +23,7 @@ import { validateMexicanField } from '../utils/ValidationSchema';
 const BuyerInfoSection = memo(({ 
   formData, 
   handleChange,
+  handleLocationChange,
   idModalShown,
   setIdModalShown,
   setShowIdCopyModal,
@@ -36,12 +39,38 @@ const BuyerInfoSection = memo(({
       transition: { type: "spring", stiffness: 400, damping: 20 }
     }
   };
+
   // Estado local para validación en tiempo real
   const [idValidation, setIdValidation] = useState({
     isValid: true,
     idType: '',
     message: ''
   });
+
+  // Obtener estado y acciones del store
+  const {
+    addressValue: buyerAddressValue,
+    suggestions,
+    isSearching,
+    radarInitialized,
+    setAddressValue: setBuyerAddressValue,
+    checkRadarInitialization,
+    searchAddresses,
+    clearSuggestions
+  } = useAddressStore();
+  
+  // Inicializar dirección desde formData al montar el componente
+  useEffect(() => {
+    if (formData.domicilioComprador) {
+      setBuyerAddressValue(formData.domicilioComprador);
+    }
+    
+    // Verificar inicialización de Radar
+    checkRadarInitialization();
+    
+    // Limpiar sugerencias al desmontar
+    return () => clearSuggestions();
+  }, [formData.domicilioComprador, setBuyerAddressValue, checkRadarInitialization, clearSuggestions]);
 
   // Validar el número de identificación según el tipo seleccionado
   const validateIdentification = (value, type) => {
@@ -91,6 +120,86 @@ const BuyerInfoSection = memo(({
     return { isValid, message, idType: validationType };
   };
 
+  // Función para manejar la selección de dirección del autocompletado
+  const handleAddressSelection = (e) => {
+    const addressValue = e.target.value;
+    setBuyerAddressValue(addressValue);
+    
+    // Verificar si tenemos el objeto de dirección completo
+    if (e.target && e.target.addressObject) {
+      const addr = e.target.addressObject;
+      updateBuyerAddressFields(addr, addressValue);
+    } else {
+      // Si solo tenemos el texto, actualizar domicilioComprador
+      if (handleChange) {
+        handleChange({ target: { name: 'domicilioComprador', value: addressValue } });
+      }
+      
+      // Si el texto tiene longitud suficiente, también intentar buscar direcciones
+      if (addressValue && addressValue.length >= 3) {
+        searchAddresses(addressValue);
+      }
+    }
+  };
+
+  // Función para actualizar todos los campos de dirección
+  const updateBuyerAddressFields = (addr, addressValue) => {
+    // Actualizar campos de ubicación con handleLocationChange
+    if (handleLocationChange) {
+      handleLocationChange({
+        // Solo actualizamos los campos relacionados con el comprador
+        buyerState: addr.state || '',
+        buyerCity: addr.city || '',
+        buyerColony: addr.colony || '',
+        buyerZipCode: addr.zipCode || '',
+        buyerStreet: addr.street || '',
+        buyerHouseNumber: addr.houseNumber || '',
+        buyerFullAddress: addr.formattedAddress || addressValue
+      });
+    }
+    
+    // Actualizar el campo domicilioComprador en el estado formData
+    if (handleChange) {
+      handleChange({ 
+        target: { 
+          name: 'domicilioComprador', 
+          value: addr.formattedAddress || addressValue 
+        } 
+      });
+    }
+  };
+  
+  // Función para manejar el cambio de texto en el input de búsqueda fallback
+  const handleSearchInputChange = (e) => {
+    const value = e.target.value;
+    setBuyerAddressValue(value);
+    
+    // Buscar direcciones si hay suficiente texto
+    if (value && value.length >= 3) {
+      searchAddresses(value);
+    }
+    
+    // Actualizar domicilioComprador
+    handleChange({ 
+      target: { 
+        name: 'domicilioComprador', 
+        value
+      } 
+    });
+  };
+  
+  // Función para manejar la selección de una sugerencia
+  const handleSuggestionSelect = (suggestion) => {
+    if (suggestion && suggestion.raw) {
+      const addr = suggestion.raw;
+      const fullAddress = addr.formattedAddress || suggestion.description;
+      
+      updateBuyerAddressFields(addr, fullAddress);
+      setBuyerAddressValue(fullAddress);
+      clearSuggestions();
+    }
+  };
+
   // Manejar cambio en el campo de número de identificación
   const handleIdentificationChange = (e) => {
     const { value } = e.target;
@@ -114,6 +223,7 @@ const BuyerInfoSection = memo(({
       setIdValidation(result);
     }
   };
+
   // Mostrar modal de recordatorio de copia de ID
   const showIdCopyReminder = () => {
     if (!idModalShown) {
@@ -195,14 +305,57 @@ const BuyerInfoSection = memo(({
             Domicilio <span className="text-royal-red">*</span>
           </label>
           <ErrorMessage message={errors.domicilioComprador} />
-          <RadarAddressAutocomplete
-            value={formData.domicilioComprador}
-            onChange={handleChange}
-            required={true}
-            error={errors.domicilioComprador}
-            inputId="domicilioComprador"
-            showMap={false}
-          />
+          {radarInitialized !== false ? (
+            // Usar RadarAddressAutocomplete si está disponible
+            <RadarAddressAutocomplete
+              value={buyerAddressValue}
+              onChange={handleAddressSelection}
+              required={true}
+              error={errors.domicilioComprador}
+              inputId="domicilioComprador"
+              showMap={false}
+            />
+          ) : (
+            // Fallback input con autocompletado básico
+            <div className="address-fallback">
+              <input
+                type="text"
+                id="domicilioComprador-fallback"
+                value={buyerAddressValue}
+                onChange={handleSearchInputChange}
+                className={addErrorClass("govuk-input w-full", errors.domicilioComprador)}
+                placeholder="Buscar dirección..."
+                required
+              />
+              
+              {isSearching && (
+                <p className="text-sm text-gray-500 mt-1">Buscando...</p>
+              )}
+              
+              {/* Sugerencias de direcciones */}
+              {suggestions.length > 0 && (
+                <div className="address-suggestions mt-2 border rounded-md shadow-sm">
+                  <ul className="max-h-60 overflow-y-auto">
+                    {suggestions.map((suggestion, index) => {
+                      const formattedAddr = suggestion.raw?.formattedAddress || suggestion.description;
+                      return (
+                        <li 
+                          key={index} 
+                          className="p-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                          onClick={() => handleSuggestionSelect(suggestion)}
+                        >
+                          {formattedAddr}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+          <p className="text-sm text-gray-500 mt-1">
+            Ingresa tu dirección para autocompletar
+          </p>
         </motion.div>
 
         {/* Buyer Phone */}

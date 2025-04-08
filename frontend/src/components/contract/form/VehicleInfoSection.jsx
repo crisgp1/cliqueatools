@@ -32,7 +32,7 @@ const VehicleInfoSection = memo(({ formData, handleChange, errors = {} }) => {
       const isValid = validateMexicanField(value, 'PLACAS');
       setPlateValidation({
         isValid,
-        message: isValid ? '' : 'Las placas no tienen un formato válido (5-7 caracteres alfanuméricos)'
+        message: isValid ? '' : 'Las placas no tienen un formato válido (3-7 caracteres alfanuméricos o NA para sin placas)'
       });
     } else {
       setPlateValidation({ isValid: true, message: '' });
@@ -189,10 +189,10 @@ const VehicleInfoSection = memo(({ formData, handleChange, errors = {} }) => {
             value={formData.placas}
             onChange={handlePlateChange}
             className={addErrorClass("govuk-input", errors.placas || !plateValidation.isValid)}
-            placeholder="Ej: ABC123, 123ABC"
+            placeholder="Ej: ABC123, 123ABC o NA para sin placas"
             required
           />
-          {formData.placas && plateValidation.isValid && formData.placas.length >= 5 && (
+          {formData.placas && plateValidation.isValid && (formData.placas === "NA" || formData.placas.length >= 3) && (
             <div className="text-sm text-green-600 mt-1">
               ✓ Formato de placas válido
             </div>

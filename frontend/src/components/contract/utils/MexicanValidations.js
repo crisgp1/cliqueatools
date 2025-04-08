@@ -37,7 +37,7 @@ export const INE_PATTERNS = {
 
 /**
  * Patrones de validación para placas vehiculares
- * Formatos variables según estado (5-7 caracteres)
+ * Formatos variables según estado (3-7 caracteres o NA para sin placas)
  */
 export const PLACAS_PATTERNS = {
   // CDMX (3 letras + 3 números)
@@ -46,8 +46,8 @@ export const PLACAS_PATTERNS = {
   EDOMEX: /^[0-9]{3}[A-Z]{3}$/,
   // Jalisco, Nuevo León y otros (2-3 letras + 4-5 números)
   OTROS: /^[A-Z]{2,3}[0-9]{4,5}$/,
-  // Patrón general que acepta la mayoría de formatos
-  GENERAL: /^[A-Z0-9]{5,7}$/
+  // Patrón general que acepta la mayoría de formatos (3-7 caracteres) o NA para sin placas
+  GENERAL: /^(NA|[A-Z0-9]{3,7})$/
 };
 
 /**

@@ -5,7 +5,8 @@ import Modal from './Modal';
 
 // Import validation schema and error components
 import { validateContractData } from '../components/contract/utils/ValidationSchema';
-import ErrorSummary from '../components/contract/utils/ErrorSummary';
+import ErrorSummary, { ErrorMessage, addErrorClass } from '../components/contract/utils/ErrorSummary';
+import { IoInformationCircleOutline } from 'react-icons/io5';
 
 // Import modular components
 import GeneralInfoSection from '../components/contract/form/GeneralInfoSection';
@@ -61,7 +62,7 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
 
     // Información del comprador
     nombreComprador: client.nombre ? `${client.nombre} ${client.apellidos || ''}` : '',
-    domicilioComprador: client.direccion || '',
+    domicilioComprador: client.domicilio ? `${client.ciudad} ${client.estado} ${client.codigoPostal}` : '', 
     telefonoComprador: client.telefono || '',
     emailComprador: client.email || '',
     identificacionComprador: '',
@@ -98,6 +99,11 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [showValidationError, setShowValidationError] = useState(false);
   
+  // Address autocomplete states
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
+  
   // Vehículo seleccionado actualmente
   const [selectedVehicle, setSelectedVehicle] = useState(vehicles.length > 0 ? vehicles[0] : null);
   
@@ -132,17 +138,40 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
   }, [contractData]);
 
   // Manejador para los cambios de ubicación (estado/ciudad/codigo postal/colonia/calle/etc)
-  const handleLocationChange = useCallback(({ state, city, colony, zipCode, street, houseNumber, fullAddress }) => {
-    setContractData(prevData => ({
-      ...prevData,
-      estado: state || prevData.estado,
-      ciudad: city || prevData.ciudad,
-      colonia: colony || prevData.colonia,
-      codigoPostal: zipCode || prevData.codigoPostal,
-      calle: street || prevData.calle,
-      numeroExterior: houseNumber || prevData.numeroExterior,
-      direccionCompleta: fullAddress || prevData.direccionCompleta
-    }));
+  const handleLocationChange = useCallback(({ 
+    state, city, colony, zipCode, street, houseNumber, fullAddress, // General address fields
+    buyerState, buyerCity, buyerColony, buyerZipCode, buyerStreet, buyerHouseNumber, buyerFullAddress // Buyer address fields
+  }) => {
+    setContractData(prevData => {
+      // Create update object
+      const updates = { ...prevData };
+      
+      // Update general address fields if provided
+      if (state || city || colony || zipCode || street || houseNumber || fullAddress) {
+       // updates.estado = state || prevData.estado;
+      //  updates.ciudad = city || prevData.ciudad;
+        updates.colonia = colony || prevData.colonia;
+        updates.codigoPostal = zipCode || prevData.codigoPostal;
+        updates.calle = street || prevData.calle;
+        updates.numeroExterior = houseNumber || prevData.numeroExterior;
+        updates.direccionCompleta = fullAddress || prevData.direccionCompleta;
+      }
+      
+      // Update buyer address fields if provided
+      if (buyerFullAddress) {
+        updates.domicilioComprador = buyerFullAddress;
+      }
+      
+      // Also update the main ciudad and estado fields from buyer data to fix validation
+      if (buyerCity) {
+        updates.ciudad = buyerCity;
+      }
+      if (buyerState) {
+        updates.estado = buyerState;
+      }
+      
+      return updates;
+    });
   }, []);
 
   // Toggle between form and preview modes with validation
@@ -173,6 +202,75 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
     setShowIdCopyModal(false);
   }, []);
   
+  // Función para buscar direcciones mediante la API
+  const searchAddresses = async (searchTerm) => {
+    if (!searchTerm || searchTerm.length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
+    
+    setIsLoadingAddresses(true);
+    try {
+      // Usar el API_URL del entorno
+      const apiUrl = `${import.meta.env.VITE_API_URL}/direcciones/buscar?q=${encodeURIComponent(searchTerm)}`;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error('Error al buscar direcciones');
+      }
+      
+      const data = await response.json();
+      if (data.success && data.data) {
+        setAddressSuggestions(data.data);
+      } else {
+        setAddressSuggestions([]);
+      }
+    } catch (error) {
+      console.error('Error al buscar direcciones:', error);
+      setAddressSuggestions([]);
+    } finally {
+      setIsLoadingAddresses(false);
+    }
+  };
+
+  // Función para seleccionar una dirección de las sugerencias
+  const handleSelectAddress = (address) => {
+    const fullAddress = `${address.calle} ${address.numeroExterior}, ${address.colonia}, ${address.municipio}, ${address.estado}, CP ${address.codigoPostal}`;
+    
+    setContractData({
+      ...contractData,
+      domicilioComprador: fullAddress
+    });
+    
+    setShowAddressSuggestions(false);
+    setAddressSuggestions([]);
+  };
+
+  // Manejador específico para el campo de domicilio
+  const handleAddressChange = (e) => {
+    const { value } = e.target;
+    
+    setContractData({
+      ...contractData,
+      domicilioComprador: value
+    });
+    
+    setShowAddressSuggestions(true);
+    searchAddresses(value);
+  };
+
+  // Verificar si la dirección está completa
+  const checkAddressComplete = () => {
+    if (!contractData.domicilioComprador || contractData.domicilioComprador.trim() === '') {
+      showAddressProofReminder();
+    }
+  };
+
+  // Mostrar modal de recordatorio de comprobante de domicilio
+  const showAddressProofReminder = () => {
+    setShowAddressProofModal(true);
+  };
+
   // Manejar la selección de vehículo
   const handleVehicleSelect = useCallback((vehicle) => {
     if (!vehicle) return;
@@ -208,6 +306,16 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
         staggerChildren: 0.1,
         when: "beforeChildren"
       }
+    }
+  };
+  
+  // Animation variants for individual form items
+  const itemAnimation = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring", stiffness: 400, damping: 20 }
     }
   };
 
@@ -247,9 +355,10 @@ const ContractForm = ({ vehicles = [], client = {} }) => {
           />
 
           {/* Buyer Information Section */}
-          <BuyerInfoSection 
+          <BuyerInfoSection
             formData={contractData}
             handleChange={handleChange}
+            handleLocationChange={handleLocationChange}
             idModalShown={idModalShown}
             setIdModalShown={setIdModalShown}
             setShowIdCopyModal={setShowIdCopyModal}
