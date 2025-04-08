@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { IoInformationCircleOutline } from 'react-icons/io5';
 import { identificacionesComunes } from '../utils/ContractUtils';

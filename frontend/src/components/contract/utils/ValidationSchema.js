@@ -13,15 +13,9 @@ import {
  * antes de permitir acceder a la vista previa
  */
 export const contractSchema = Joi.object({
-  // Información General - campos obligatorios
-  ciudad: Joi.string().required().messages({
-    'string.empty': 'La ciudad es obligatoria',
-    'any.required': 'La ciudad es obligatoria'
-  }),
-  estado: Joi.string().required().messages({
-    'string.empty': 'El estado es obligatorio',
-    'any.required': 'El estado es obligatorio'
-  }),
+  // Información General - campos opcionales
+  ciudad: Joi.string().allow(''),
+  estado: Joi.string().allow(''),
   fecha: Joi.string().required().messages({
     'string.empty': 'La fecha es obligatoria',
     'any.required': 'La fecha es obligatoria'

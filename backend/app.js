@@ -14,7 +14,7 @@ const PORT = process.env.PORT;
 // Configuración de CORS para permitir solicitudes desde el frontend
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? 'http://localhost:5174' // Origen específico en producción
+    ? 'http://localhost:5173' // Origen específico en producción
     : '*', // Permitir cualquier origen en desarrollo
   credentials: true, // Permitir credenciales (cookies, headers authorization, etc)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
