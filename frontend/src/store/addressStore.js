@@ -37,20 +37,11 @@ const useAddressStore = create((set, get) => ({
     set({ addressValues: newValues });
   },
   
+  // Verificar inicialización de Radar
   checkRadarInitialization: () => {
-    // Solo verificar una vez
-    if (get().radarInitialized !== null) return;
-    
-    const radarElement = document.querySelector('.radar-autocomplete-container');
-    set({ radarInitialized: radarElement && radarElement.children.length > 0 });
-    
-    // Programar una verificación posterior si aún no está inicializado
-    if (!radarElement || radarElement.children.length === 0) {
-      setTimeout(() => {
-        const radarElementRetry = document.querySelector('.radar-autocomplete-container');
-        set({ radarInitialized: radarElementRetry && radarElementRetry.children.length > 0 });
-      }, 3000);
-    }
+    const isInitialized = typeof window !== 'undefined' && window.radarInitialized === true;
+    set({ radarInitialized: isInitialized });
+    return isInitialized;
   },
   
   // Buscar direcciones (para modo fallback)

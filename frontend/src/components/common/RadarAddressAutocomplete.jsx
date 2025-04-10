@@ -160,6 +160,16 @@ const RadarAddressAutocomplete = ({
     };
   }, [value, onChange, inputId, showMap]); // Eliminar hasInitialized para evitar loop
 
+  // Asegurarse de que el input tenga el valor actualizado cuando cambia desde fuera
+  useEffect(() => {
+    if (containerRef.current && hasInitialized) {
+      const inputElement = containerRef.current.querySelector('input');
+      if (inputElement && inputElement.value !== value) {
+        inputElement.value = value;
+      }
+    }
+  }, [value, hasInitialized]);
+
   // Animación
   const itemAnimation = {
     hidden: { opacity: 0, y: 10 },
@@ -176,7 +186,7 @@ const RadarAddressAutocomplete = ({
         {/* Contenedor para el input de autocompletado de Radar */}
         <div 
           ref={containerRef} 
-          className={`radar-autocomplete-container ${error ? 'border-red-500' : ''}`}
+          className={`radar-autocomplete-container govuk-input ${error ? 'border-red-500' : ''}`}
           style={{ 
             width: '100%', 
             minHeight: '42px',
