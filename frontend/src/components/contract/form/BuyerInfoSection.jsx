@@ -59,11 +59,14 @@ const BuyerInfoSection = memo(({
     clearSuggestions
   } = useAddressStore();
   
+  // Estado local para la dirección
+  const [addressValue, setAddressValue] = useState('');
+
   // Inicializar dirección desde formData al montar el componente
   useEffect(() => {
     if (formData.domicilioComprador) {
       // Usar 'buyer' como contexto específico
-      addressStore.setAddressValue(formData.domicilioComprador, 'buyer');
+      setBuyerAddressValue(formData.domicilioComprador);
       setAddressValue(formData.domicilioComprador);
     }
     
@@ -71,10 +74,8 @@ const BuyerInfoSection = memo(({
     checkRadarInitialization();
     
     // Limpiar sugerencias al desmontar
-    return () => addressStore.clearSuggestions('buyer');
-  }, [formData.domicilioComprador, addressStore, checkRadarInitialization]);
     return () => clearSuggestions();
-  }, []);
+  }, [formData.domicilioComprador, setBuyerAddressValue, checkRadarInitialization]);
 
   // Mantener sincronizado el estado local con el formData
   useEffect(() => {
@@ -134,7 +135,7 @@ const BuyerInfoSection = memo(({
   // Función para manejar la selección de dirección del autocompletado
   const handleAddressSelection = (e) => {
     const addressValue = e.target.value;
-    addressStore.setAddressValue(addressValue, 'buyer');
+    setBuyerAddressValue(addressValue);
     setAddressValue(addressValue);
     
     // Verificar si tenemos el objeto de dirección completo
@@ -149,7 +150,7 @@ const BuyerInfoSection = memo(({
       
       // Si el texto tiene longitud suficiente, también intentar buscar direcciones
       if (addressValue && addressValue.length >= 3) {
-        addressStore.searchAddresses(addressValue, 'buyer');
+        searchAddresses(addressValue);
       }
     }
   };
@@ -184,12 +185,12 @@ const BuyerInfoSection = memo(({
   // Función para manejar el cambio de texto en el input de búsqueda fallback
   const handleSearchInputChange = (e) => {
     const value = e.target.value;
-    addressStore.setAddressValue(value, 'buyer');
+    setBuyerAddressValue(value);
     setAddressValue(value);
     
     // Buscar direcciones si hay suficiente texto
     if (value && value.length >= 3) {
-      addressStore.searchAddresses(value, 'buyer');
+      searchAddresses(value);
     }
     
     // Actualizar domicilioComprador
@@ -208,10 +209,9 @@ const BuyerInfoSection = memo(({
       const fullAddress = addr.formattedAddress || suggestion.description;
       
       updateBuyerAddressFields(addr, fullAddress);
-      addressStore.setAddressValue(fullAddress, 'buyer');
-      addressStore.clearSuggestions('buyer');
-      setAddressValue(fullAddress);
+      setBuyerAddressValue(fullAddress);
       clearSuggestions();
+      setAddressValue(fullAddress);
     }
   };
 
@@ -317,17 +317,9 @@ const BuyerInfoSection = memo(({
           {/* Usamos el mismo estilos que los demás campos para consistencia visual */}
           {radarInitialized !== false ? (
             // Usar RadarAddressAutocomplete si está disponible
-            <RadarAddressAutocomplete
-            value={buyerAddressValue || ''}
-              onChange={handleAddressSelection}
-              required={true}
-              error={errors.domicilioComprador}
-              inputId="domicilioComprador"
-              showMap={false}
-            />
             <div className="w-full">
               <RadarAddressAutocomplete
-                value={addressValue}
+                value={buyerAddressValue || ''}
                 onChange={handleAddressSelection}
                 required={true}
                 error={errors.domicilioComprador}
@@ -350,15 +342,15 @@ const BuyerInfoSection = memo(({
                 style={{ minHeight: '42px' }}
               />
               
-              {isBuyerSearching && (
+              {isSearching && (
                 <p className="text-sm text-gray-500 mt-1">Buscando...</p>
               )}
               
               {/* Sugerencias de direcciones */}
-              {buyerSuggestions.length > 0 && (
+              {suggestions.length > 0 && (
                 <div className="address-suggestions mt-2 border rounded-md shadow-sm">
                   <ul className="max-h-60 overflow-y-auto">
-                    {buyerSuggestions.map((suggestion, index) => {
+                    {suggestions.map((suggestion, index) => {
                       const formattedAddr = suggestion.raw?.formattedAddress || suggestion.description;
                       return (
                         <li 
