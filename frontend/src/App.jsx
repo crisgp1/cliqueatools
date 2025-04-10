@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import CreateAccount from './pages/CreateAccount'
 import ApiReference from './pages/ApiReference'
 import OrganizationChart from './pages/OrganizationChart'
+import QuickCredit from './pages/QuickCredit'
 import { AuthProvider, AuthContext } from './context/AuthContext'
 import logoImg from './assets/logo.png'
 import logoImgDark from './assets/logo-dark.png'
@@ -34,7 +35,8 @@ import {
   IoDocumentTextOutline,
   IoCodeOutline,
   IoCalendarOutline,
-  IoPeopleOutline
+  IoPeopleOutline,
+  IoFlashOutline
 } from 'react-icons/io5'
 
 // Animaciones para las transiciones
@@ -123,6 +125,7 @@ const MainApp = () => {
     { id: 'vehicles', name: 'Vehículos', icon: 'car' },
     { id: 'clients', name: 'Clientes', icon: 'user' },
     { id: 'credit', name: 'Configurar Crédito', icon: 'credit-card', disabled: vehicles.length === 0 },
+    { id: 'quickcredit', name: 'Cotizador Rápido', icon: 'flash' },
     { id: 'results', name: 'Resultados', icon: 'chart', disabled: creditResults.length === 0 },
     { id: 'amortization', name: 'Tabla de Amortización', icon: 'table', disabled: !selectedBank },
     { id: 'contract', name: 'Contrato', icon: 'document', disabled: vehicles.length === 0 },
@@ -192,6 +195,8 @@ const MainApp = () => {
         return <IoPersonOutline className="h-5 w-5" />
       case 'credit-card':
         return <IoCardOutline className="h-5 w-5" />
+      case 'flash':
+        return <IoFlashOutline className="h-5 w-5" />
       case 'chart':
         return <IoStatsChartOutline className="h-5 w-5" />
       case 'table':
@@ -256,6 +261,19 @@ const MainApp = () => {
               onCreditConfigChange={handleCreditConfigChange}
               onCalculateResults={handleCalculateResults}
             />
+          </div>
+        )
+      
+      case 'quickcredit':
+        return (
+          <div className="uber-card">
+            <h2 className="text-xl font-bold text-uber-black mb-4">
+              <span className="inline-flex items-center">
+                <IoFlashOutline className="h-6 w-6 mr-2 text-amber-500" />
+                Cotizador Rápido
+              </span>
+            </h2>
+            <QuickCredit />
           </div>
         )
       case 'results':
