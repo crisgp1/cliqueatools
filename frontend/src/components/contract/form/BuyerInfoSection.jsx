@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { IoInformationCircleOutline } from 'react-icons/io5';
 import { identificacionesComunes } from '../utils/ContractUtils';
@@ -150,7 +150,7 @@ const BuyerInfoSection = memo(({
       
       // Si el texto tiene longitud suficiente, también intentar buscar direcciones
       if (addressValue && addressValue.length >= 3) {
-        searchAddresses(addressValue);
+        addressStore.searchAddresses(addressValue, 'buyer');
       }
     }
   };
@@ -190,7 +190,7 @@ const BuyerInfoSection = memo(({
     
     // Buscar direcciones si hay suficiente texto
     if (value && value.length >= 3) {
-      searchAddresses(value);
+      addressStore.searchAddresses(value, 'buyer');
     }
     
     // Actualizar domicilioComprador
@@ -342,15 +342,15 @@ const BuyerInfoSection = memo(({
                 style={{ minHeight: '42px' }}
               />
               
-              {isSearching && (
+              {isBuyerSearching && (
                 <p className="text-sm text-gray-500 mt-1">Buscando...</p>
               )}
               
               {/* Sugerencias de direcciones */}
-              {suggestions.length > 0 && (
+              {buyerSuggestions.length > 0 && (
                 <div className="address-suggestions mt-2 border rounded-md shadow-sm">
                   <ul className="max-h-60 overflow-y-auto">
-                    {suggestions.map((suggestion, index) => {
+                    {buyerSuggestions.map((suggestion, index) => {
                       const formattedAddr = suggestion.raw?.formattedAddress || suggestion.description;
                       return (
                         <li 
