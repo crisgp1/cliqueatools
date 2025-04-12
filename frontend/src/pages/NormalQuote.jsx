@@ -1,4 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
+import useNavigationStore from '../store/navigationStore';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
@@ -12,10 +13,19 @@ const NormalQuote = () => {
   // Autenticación
   const { user } = useContext(AuthContext);
   
-  // Estado para pasar datos entre componentes
-  const [quoteData, setQuoteData] = useState(null);
-  const [results, setResults] = useState([]);
-  const [selectedBank, setSelectedBank] = useState(null);
+  // Usar el store de navegación con persistencia
+  const {
+    normalQuote,
+    setNormalQuoteData,
+    setNormalQuoteResults,
+    setNormalQuoteSelectedBank,
+    setNormalQuoteActiveComponent
+  } = useNavigationStore();
+  
+  // Usar estados del store si existen, o inicializar con los valores por defecto
+  const [quoteData, setQuoteDataLocal] = useState(() => normalQuote.quoteData || null);
+  const [results, setResultsLocal] = useState(() => normalQuote.results || []);
+  const [selectedBank, setSelectedBankLocal] = useState(() => normalQuote.selectedBank || null);
   const [vehicles, setVehicles] = useState([]);
   const [client, setClient] = useState(null);
   
@@ -29,25 +39,42 @@ const NormalQuote = () => {
     // Código para cargar vehículos y datos del cliente...
   }, [user]);
 
+  // Efecto para actualizar el store cuando cambian los estados locales
+  useEffect(() => {
+    setNormalQuoteData(quoteData);
+  }, [quoteData, setNormalQuoteData]);
+
+  useEffect(() => {
+    setNormalQuoteResults(results);
+  }, [results, setNormalQuoteResults]);
+
+  useEffect(() => {
+    setNormalQuoteSelectedBank(selectedBank);
+  }, [selectedBank, setNormalQuoteSelectedBank]);
+
   // Manejar los resultados del cálculo de cotización
   const handleCalculateResults = (calculatedResults) => {
-    setResults(calculatedResults);
+    setResultsLocal(calculatedResults);
+    setNormalQuoteActiveComponent('comparison');
     navigate('comparison');
   };
 
   // Manejar la selección de banco para ir a la tabla de amortización
   const handleSelectBank = (bank) => {
-    setSelectedBank(bank);
+    setSelectedBankLocal(bank);
+    setNormalQuoteActiveComponent('amortization');
     navigate('amortization');
   };
 
-  // Manejador para volver atrás
+  // Manejador para volver atrás - actualiza el store y usa React Router
   const handleBack = () => {
     const path = location.pathname;
     
     if (path.includes('amortization')) {
+      setNormalQuoteActiveComponent('comparison');
       navigate('../comparison');
     } else if (path.includes('comparison')) {
+      setNormalQuoteActiveComponent('/');
       navigate('../');
     } else {
       // Volver al menú principal si estamos en la raíz del cotizador normal
@@ -57,8 +84,14 @@ const NormalQuote = () => {
 
   // Manejar cambios en la configuración del crédito
   const handleCreditConfigChange = (config) => {
-    setQuoteData(config);
+    setQuoteDataLocal(config);
   };
+
+  // Efecto para actualizar el componente activo en el store cuando cambia la ruta
+  useEffect(() => {
+    const path = location.pathname.split('/').pop() || '/';
+    setNormalQuoteActiveComponent(path);
+  }, [location, setNormalQuoteActiveComponent]);
 
   // Variantes para animaciones
   const pageVariants = {

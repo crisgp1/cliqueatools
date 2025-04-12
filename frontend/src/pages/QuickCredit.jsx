@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import useNavigationStore from '../store/navigationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import CreditMenu from '../components/credit/CreditMenu';
 import QuickCreditForm from '../components/credit/QuickCreditForm';
@@ -6,35 +7,42 @@ import QuickCreditResults from '../components/credit/QuickCreditResults';
 import { FaChevronLeft } from 'react-icons/fa';
 
 const QuickCredit = () => {
-  // Estados para controlar la navegación entre componentes
-  const [activeComponent, setActiveComponent] = useState('menu');
-  const [cotizacionData, setCotizacionData] = useState(null);
+  // Usar el store de navegación con persistencia
+  const { 
+    quickCredit, 
+    setQuickCreditActiveComponent, 
+    setQuickCreditData, 
+    goBackQuickCredit 
+  } = useNavigationStore();
   
+  // Extraer estados del store
+  const { activeComponent, cotizacionData } = quickCredit;
+  
+  // Efecto para cargar datos persistentes al iniciar
+  useEffect(() => {
+    // El estado se carga automáticamente desde localStorage gracias a Zustand/persist
+  }, []);
+
   // Manejar selección de opción en el menú
   const handleMenuSelection = (option) => {
     if (option === 'quick') {
-      setActiveComponent('form');
+      setQuickCreditActiveComponent('form');
     } else if (option === 'normal') {
       // En una aplicación real, aquí se redireccionaría al cotizador normal
-      setActiveComponent('normal');
+      setQuickCreditActiveComponent('normal');
     }
   };
   
   // Manejar envío del formulario
   const handleFormSubmit = (data) => {
-    setCotizacionData(data);
-    setActiveComponent('results');
+    setQuickCreditData(data);
+    setQuickCreditActiveComponent('results');
   };
   
-  // Manejar el botón de volver
+  // Manejar el botón de volver, usando el historial guardado
   const handleBack = () => {
-    if (activeComponent === 'form') {
-      setActiveComponent('menu');
-    } else if (activeComponent === 'results') {
-      setActiveComponent('form');
-    } else if (activeComponent === 'normal') {
-      setActiveComponent('menu');
-    }
+    // Usar la función de navegación atrás del store
+    goBackQuickCredit();
   };
   
   // Animaciones para transiciones
@@ -69,7 +77,7 @@ const QuickCredit = () => {
             exit={pageTransition.exit}
             transition={pageTransition.transition}
           >
-            <QuickCreditForm onSubmitForm={handleFormSubmit} onBack={handleBack} />
+            <QuickCreditForm onSubmitForm={handleFormSubmit} onBack={goBackQuickCredit} />
           </motion.div>
         )}
         
@@ -81,7 +89,7 @@ const QuickCredit = () => {
             exit={pageTransition.exit}
             transition={pageTransition.transition}
           >
-            <QuickCreditResults cotizacion={cotizacionData} onBack={handleBack} />
+            <QuickCreditResults cotizacion={cotizacionData} onBack={goBackQuickCredit} />
           </motion.div>
         )}
         

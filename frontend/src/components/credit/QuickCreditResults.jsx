@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useReactToPrint } from 'react-to-print';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { QuickAmortizationPDF } from '../pdf/AmortizationPDF';
+import usePdfStore from '../../store/pdfStore';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -107,132 +108,23 @@ const QuickCreditResults = ({ cotizacion, onBack }) => {
     documentTitle: `Cotizacion_${vehiculo.marca}_${vehiculo.modelo}_${new Date().toISOString().split('T')[0]}`,
   });
   
-  // Función para manejar la descarga del PDF
-  const handleDownloadPDF = () => {
-    try {
-      // Crear un nuevo documento PDF
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      // Establecer propiedades del documento
-      doc.setProperties({
-        title: `Cotización de Crédito - ${vehiculo.marca} ${vehiculo.modelo}`,
-        subject: 'Cotización de Crédito Automotriz',
-        author: 'Cliquéalo.mx',
-        creator: 'Cotizador Rápido'
-      });
-      
-      // Constantes para posicionamiento
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const centerX = pageWidth / 2;
-      
-      // Añadir logo
-      try {
-        doc.addImage(logoCliquealo, 'PNG', centerX - 15, 10, 30, 15);
-      } catch (error) {
-        console.warn('No se pudo cargar el logo:', error);
-      }
-      
-      // Título del documento
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 0);
-      doc.text('Cotización de Crédito Automotriz', centerX, 35, { align: 'center' });
-      
-      // Fecha de cotización
-      doc.setFontSize(10);
-      doc.text(`Generado el: ${formatDate(fecha)}`, centerX, 42, { align: 'center' });
-      
-      // Añadir información del cliente
-      doc.setFontSize(12);
-      doc.text('Información del Cliente', 15, 52);
-      doc.setFontSize(10);
-      doc.text(`Nombre: ${cliente.nombre} ${cliente.apellidos}`, 15, 58);
-      doc.text(`Teléfono: ${cliente.telefono}`, 15, 64);
-      if (cliente.email) {
-        doc.text(`Email: ${cliente.email}`, 15, 70);
-      }
-      
-      // Información del vehículo
-      doc.setFontSize(12);
-      doc.text('Información del Vehículo', 110, 52);
-      doc.setFontSize(10);
-      doc.text(`Vehículo: ${vehiculo.marca} ${vehiculo.modelo} ${vehiculo.anio}`, 110, 58);
-      doc.text(`Precio: ${formatCurrency(vehiculo.precio)}`, 110, 64);
-      if (vehiculo.placas) {
-        doc.text(`Placas: ${vehiculo.placas}`, 110, 70);
-      }
-      
-      // Resumen del financiamiento
-      doc.setFontSize(12);
-      doc.text('Resumen del Financiamiento', 15, 82);
-      doc.setFontSize(10);
-      
-      const financingData = [
-        ['Banco', credito.banco.nombre],
-        ['Tasa de interés', `${credito.tasaInteres}% anual`],
-        ['Plazo', `${credito.plazo} meses`],
-        ['Precio del vehículo', formatCurrency(vehiculo.precio)],
-        ['Enganche', `${formatCurrency(credito.engancheMonto)} (${credito.enganchePorcentaje}%)`],
-        ['Monto financiado', formatCurrency(credito.montoFinanciamiento)],
-        ['Pago mensual', formatCurrency(credito.pagoMensual)],
-        ['Total de intereses', formatCurrency(credito.interesesTotales)],
-        ['Comisión por apertura', formatCurrency(credito.comisionApertura)],
-        ['Monto total a pagar', formatCurrency(credito.montoTotal)]
-      ];
-      
-      // Crear tabla
-      doc.autoTable({
-        startY: 86,
-        head: [['Concepto', 'Valor']],
-        body: financingData,
-        theme: 'striped',
-        headStyles: { fillColor: [233, 146, 16], textColor: [255, 255, 255] },
-        styles: { fontSize: 9 }
-      });
-      
-      // Tabla de amortización
-      const finalY = doc.previousAutoTable.finalY + 10;
-      doc.setFontSize(12);
-      doc.text('Tabla de Amortización (Primeros 12 pagos)', 15, finalY);
-      
-      // Datos para la tabla de amortización
-      const amortizationTableData = amortizationData.slice(0, 12).map(row => [
-        row.paymentNumber,
-        formatDate(row.paymentDate),
-        formatCurrency(row.payment),
-        formatCurrency(row.principalPayment),
-        formatCurrency(row.interestPayment),
-        formatCurrency(row.balance)
-      ]);
-      
-      // Crear tabla de amortización
-      doc.autoTable({
-        startY: finalY + 5,
-        head: [['#', 'Fecha', 'Pago', 'Capital', 'Interés', 'Saldo']],
-        body: amortizationTableData,
-        theme: 'striped',
-        headStyles: { fillColor: [233, 146, 16], textColor: [255, 255, 255] },
-        styles: { fontSize: 8 },
-        didDrawPage: function (data) {
-          // Pie de página
-          const pageHeight = doc.internal.pageSize.getHeight();
-          doc.setFontSize(8);
-          doc.setTextColor(100, 100, 100);
-          doc.text('Esta cotización es informativa y no constituye una oferta de crédito.', centerX, pageHeight - 15, { align: 'center' });
-          doc.text('Las condiciones pueden variar según aprobación crediticia y políticas vigentes.', centerX, pageHeight - 10, { align: 'center' });
-        }
-      });
-      
-      // Guardar PDF
-      const pdfName = `Cotizacion_${vehiculo.marca}_${vehiculo.modelo}_${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(pdfName);
-    } catch (error) {
-      console.error('Error al generar el PDF:', error);
-      alert('Ocurrió un error al generar el PDF. Por favor intenta de nuevo.');
-    }
+  // Zustand store para manejar los datos del PDF
+  const { setQuickPdfData } = usePdfStore();
+  
+  // Preparar datos para el PDF
+  useEffect(() => {
+    setQuickPdfData({
+      cliente,
+      vehiculo,
+      credito,
+      fecha,
+      amortizationData
+    });
+  }, [cliente, vehiculo, credito, fecha, amortizationData, setQuickPdfData]);
+  
+  // Nombre del archivo PDF
+  const getPdfFilename = () => {
+    return `Cotizacion_${vehiculo.marca}_${vehiculo.modelo}_${new Date().toISOString().split('T')[0]}.pdf`;
   };
   
   // Variantes para animaciones
@@ -284,13 +176,19 @@ const QuickCreditResults = ({ cotizacion, onBack }) => {
             <FaPrint className="mr-2" />
             Imprimir
           </button>
-          <button
-            onClick={handleDownloadPDF}
+          <PDFDownloadLink
+            document={<QuickAmortizationPDF cotizacion={{ cliente, vehiculo, credito, fecha, amortizationData }} />}
+            fileName={getPdfFilename()}
             className="px-4 py-2 bg-amber-500 text-white rounded-lg flex items-center hover:bg-amber-600 transition-all"
+            style={{ textDecoration: 'none' }}
           >
-            <FaFilePdf className="mr-2" />
-            Descargar PDF
-          </button>
+            {({ blob, url, loading, error }) => (
+              <>
+                <FaFilePdf className="mr-2" />
+                {loading ? 'Generando PDF...' : 'Descargar PDF'}
+              </>
+            )}
+          </PDFDownloadLink>
         </div>
       </motion.div>
       

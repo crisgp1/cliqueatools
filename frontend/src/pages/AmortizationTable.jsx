@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { NormalAmortizationPDF } from '../components/pdf/AmortizationPDF';
+import usePdfStore from '../store/pdfStore';
 import logoCliquealo from '../assets/logo-cliquealo.png';
 import CreditEvolutionModal from './CreditEvolutionModal';
 import { IoBarChartOutline } from 'react-icons/io5';
@@ -182,182 +183,23 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
     removeAfterPrint: true
   });
   
-  // Manejar descarga de PDF
-  const handleDownloadPDF = () => {
-    try {
-      // Crear documento PDF orientación portrait, unidades en mm, formato A4
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      // Agregar metadatos al documento
-      doc.setProperties({
-        title: `Tabla de Amortización - ${bank.nombre}`,
-        subject: 'Tabla de Amortización de Crédito Automotriz',
-        author: 'Cliquéalo.mx',
-        creator: 'Simulador de Crédito Automotriz'
-      });
-      
-      // Definir constantes para posicionamiento
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const centerX = pageWidth / 2;
-      
-      // Añadir logo y encabezado - usando try/catch específico para manejo de imagen
-      try {
-        // Convertir la imagen importada a base64 o usar URL
-        const imgData = logoCliquealo;
-        doc.addImage(imgData, 'PNG', centerX - 15, 10, 30, 15, undefined, 'FAST');
-      } catch (imgError) {
-        console.warn('No se pudo cargar el logo:', imgError);
-        // Continuar sin la imagen si falla
-      }
-      
-      doc.setFontSize(16);
-      doc.text('Tabla de Amortización', centerX, 35, { align: 'center' });
-      
-      // Detalles del banco y fecha
-      doc.setFontSize(10);
-      const bankText = `Banco: ${bank.nombre} | Generado el: ${new Date().toLocaleDateString('es-MX')}`;
-      doc.text(bankText, centerX, 42, { align: 'center' });
-      
-      if (creditConfig.useCustomRate) {
-        doc.text(`(Tasa personalizada: ${formatPercentage(creditConfig.customRate)})`, centerX, 48, { align: 'center' });
-      }
-      
-      // Información del cliente
-      doc.setFontSize(12);
-      doc.text('Información del Cliente', 14, 60);
-      doc.setFontSize(10);
-      let yPos = 65;
-      
-      if (client) {
-        doc.text(`Nombre: ${client.nombre} ${client.apellidos}`, 14, yPos);
-        yPos += 5;
-        
-        if (client.rfc) {
-          doc.text(`RFC: ${client.rfc}`, 14, yPos);
-          yPos += 5;
-        }
-        
-        if (client.email) {
-          doc.text(`Email: ${client.email}`, 14, yPos);
-          yPos += 5;
-        }
-      }
-      
-      // Detalles del crédito
-      yPos = Math.max(yPos, 65);
-      doc.setFontSize(12);
-      doc.text('Detalles del Crédito', 95, 60);
-      doc.setFontSize(10);
-      doc.text(`Monto financiado: ${formatCurrency(creditConfig.financingAmount)}`, 95, 65);
-      doc.text(`Plazo: ${creditConfig.term} meses`, 95, 70);
-      doc.text(`Tasa anual: ${formatPercentage(effectiveRate)}${creditConfig.useCustomRate ? ' (Personalizada)' : ''}`, 95, 75);
-      doc.text(`CAT: ${creditConfig.useCustomCat 
-        ? formatPercentage(creditConfig.customCat)
-        : creditConfig.useCustomRate 
-          ? `~${formatPercentage(creditConfig.customRate * 1.3)}` // Estimación aproximada
-          : formatPercentage(bank.cat)}`, 95, 80);
-      
-      // Resumen del préstamo
-      doc.setFontSize(12);
-      doc.text('Resumen del Préstamo', 150, 60);
-      doc.setFontSize(10);
-      doc.text(`Pago mensual: ${amortizationData.length > 0 
-        ? formatCurrency(amortizationData[0].payment) 
-        : formatCurrency(0)}`, 150, 65);
-      doc.text(`Total a pagar: ${amortizationData.length > 0 
-        ? formatCurrency(amortizationData[0].payment * creditConfig.term)
-        : formatCurrency(0)}`, 150, 70);
-      doc.text(`Total de intereses: ${formatCurrency(
-        amortizationData.length > 0
-          ? amortizationData.reduce((sum, row) => sum + row.interestPayment, 0)
-          : 0
-      )}`, 150, 75);
-      doc.text(`Comisión por apertura: ${formatCurrency((creditConfig.financingAmount * bank.comision) / 100)}`, 150, 80);
-      
-      // Vehículos financiados (si hay)
-      yPos = 90;
-      if (filteredVehicles && filteredVehicles.length > 0) {
-        doc.setFontSize(12);
-        doc.text('Vehículos financiados', 14, yPos);
-        yPos += 5;
-        
-        const vehicleTableColumns = ['Descripción', 'Marca/Modelo', 'Año', 'Valor'];
-        const vehicleTableRows = filteredVehicles.map(vehicle => [
-          vehicle.descripcion || '',
-          `${vehicle.marca || ''} ${vehicle.modelo || ''}`,
-          vehicle.año || '',
-          formatCurrency(vehicle.valor || 0)
-        ]);
-        
-        doc.autoTable({
-          head: [vehicleTableColumns],
-          body: vehicleTableRows,
-          startY: yPos,
-          margin: { left: 14 },
-          theme: 'grid',
-          headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
-          styles: { fontSize: 8 },
-        });
-        
-        yPos = doc.previousAutoTable.finalY + 10;
-      }
-      
-      // Tabla de amortización
-      doc.setFontSize(12);
-      doc.text('Tabla de Amortización', 14, yPos);
-      yPos += 5;
-      
-      const amortizationColumns = ['No. Pago', 'Fecha', 'Pago', 'Capital', 'Interés', 'Saldo'];
-      
-      // Verificar que amortizationData sea válido y tenga elementos
-      if (amortizationData && amortizationData.length > 0) {
-        const amortizationRows = amortizationData.map(row => [
-          row.paymentNumber,
-          formatDate(row.paymentDate),
-          formatCurrency(row.payment),
-          formatCurrency(row.principalPayment),
-          formatCurrency(row.interestPayment),
-          formatCurrency(row.balance)
-        ]);
-        
-        doc.autoTable({
-          head: [amortizationColumns],
-          body: amortizationRows,
-          startY: yPos,
-          margin: { left: 14 },
-          theme: 'grid',
-          headStyles: { fillColor: [10, 10, 10], textColor: [255, 255, 255] },
-          styles: { fontSize: 8 },
-          didDrawPage: function (data) {
-            // Pie de página
-            const pageSize = doc.internal.pageSize;
-            const pageHeight = pageSize.getHeight();
-            doc.setFontSize(8);
-            doc.text('Este documento es informativo y no representa un contrato de crédito oficial.', centerX, pageHeight - 20, { align: 'center' });
-            doc.text(`Consulta los términos y condiciones con ${bank.nombre} antes de formalizar tu crédito.`, centerX, pageHeight - 15, { align: 'center' });
-            doc.text('Generado por Cliquéalo.mx - Simulador de Crédito Automotriz', centerX, pageHeight - 10, { align: 'center' });
-          }
-        });
-      } else {
-        // Si no hay datos, mostrar mensaje
-        doc.text("No hay datos de amortización disponibles", 14, yPos + 10);
-      }
-      
-      // Guardar PDF con nombre específico y fecha
-      const fechaArchivo = new Date().toISOString().split('T')[0];
-      const nombreArchivo = `Tabla_Amortizacion_${bank.nombre.replace(/\s+/g, '_')}_${fechaArchivo}.pdf`;
-      
-      doc.save(nombreArchivo);
-      
-      console.log('PDF generado y descargado correctamente');
-    } catch (error) {
-      console.error('Error al generar el PDF:', error);
-      alert('Hubo un error al generar el PDF. Por favor, intente nuevamente.');
-    }
+  // Zustand store para manejar los datos del PDF
+  const { setNormalPdfData } = usePdfStore();
+  
+  // Preparar datos para el PDF
+  useEffect(() => {
+    setNormalPdfData({
+      bank,
+      client,
+      vehicles: filteredVehicles,
+      creditConfig,
+      amortizationData
+    });
+  }, [bank, client, filteredVehicles, creditConfig, amortizationData, setNormalPdfData]);
+  
+  // Nombre del archivo PDF
+  const getPdfFilename = () => {
+    return `Tabla_Amortizacion_${bank.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
   };
   
   return (
@@ -404,15 +246,21 @@ const AmortizationTable = ({ bank, client, vehicles, creditConfig, onBack }) => 
               </svg>
               Imprimir
             </button>
-            <button
-              onClick={handleDownloadPDF}
+            <PDFDownloadLink
+              document={<NormalAmortizationPDF data={{ bank, client, vehicles: filteredVehicles, creditConfig, amortizationData }} />}
+              fileName={getPdfFilename()}
               className="govuk-button-secondary px-3 py-1 text-sm flex items-center"
+              style={{ textDecoration: 'none' }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-              Descargar PDF
-            </button>
+              {({ blob, url, loading, error }) => (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  {loading ? 'Generando PDF...' : 'Descargar PDF'}
+                </>
+              )}
+            </PDFDownloadLink>
           </div>
         </div>
       </div>
