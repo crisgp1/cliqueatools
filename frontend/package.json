@@ -17,6 +17,7 @@
     "antd": "^5.24.6",
     "chart.js": "^4.4.1",
     "framer-motion": "^12.6.3",
+    "joi": "^17.13.3",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lottie-react": "^2.4.1",
