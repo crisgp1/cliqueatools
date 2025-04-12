@@ -121,8 +121,22 @@ const BankSelectionGrid = ({
                   <div className="mb-2 text-royal-black">
                     {React.createElement(bank.logo, { className: "h-8 w-8" })}
                   </div>
+                ) : typeof bank.logo === 'string' && bank.logo.includes('.svg') ? (
+                  <img src={bank.logo} alt={bank.nombre} className="h-8 mb-2 object-contain" />
                 ) : (
-                  <img src={bank.logo} alt={bank.nombre} className="h-8 mb-2" />
+                  <img 
+                    src={bank.logo} 
+                    alt={bank.nombre} 
+                    className="h-8 mb-2 object-contain" 
+                    onError={(e) => {
+                      console.warn(`Error loading logo for ${bank.nombre}`, e);
+                      // Fallback a un texto si la imagen no carga
+                      e.target.style.display = 'none';
+                      e.target.parentNode.innerHTML = `<div class="h-8 w-8 flex items-center justify-center bg-gray-200 rounded-full mb-2">
+                        <span class="text-lg font-bold">${bank.nombre.charAt(0)}</span>
+                      </div>`;
+                    }}
+                  />
                 )}
                 <span className="text-base font-bold">{bank.nombre}</span>
                 <div className="mt-1 flex flex-wrap justify-center gap-1">

@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { IoInformationCircleOutline } from 'react-icons/io5';
 import { identificacionesComunes } from '../utils/ContractUtils';
@@ -59,10 +59,15 @@ const BuyerInfoSection = memo(({
     clearSuggestions
   } = useAddressStore();
   
+  // Estado local para la dirección
+  const [addressValue, setAddressValue] = useState('');
+
   // Inicializar dirección desde formData al montar el componente
   useEffect(() => {
     if (formData.domicilioComprador) {
+      // Usar 'buyer' como contexto específico
       setBuyerAddressValue(formData.domicilioComprador);
+      setAddressValue(formData.domicilioComprador);
     }
     
     // Verificar inicialización de Radar
@@ -70,7 +75,14 @@ const BuyerInfoSection = memo(({
     
     // Limpiar sugerencias al desmontar
     return () => clearSuggestions();
-  }, [formData.domicilioComprador, setBuyerAddressValue, checkRadarInitialization, clearSuggestions]);
+  }, [formData.domicilioComprador, setBuyerAddressValue, checkRadarInitialization]);
+
+  // Mantener sincronizado el estado local con el formData
+  useEffect(() => {
+    if (formData.domicilioComprador !== addressValue) {
+      setAddressValue(formData.domicilioComprador);
+    }
+  }, [formData.domicilioComprador, setAddressValue]);
 
   // Validar el número de identificación según el tipo seleccionado
   const validateIdentification = (value, type) => {
@@ -124,6 +136,7 @@ const BuyerInfoSection = memo(({
   const handleAddressSelection = (e) => {
     const addressValue = e.target.value;
     setBuyerAddressValue(addressValue);
+    setAddressValue(addressValue);
     
     // Verificar si tenemos el objeto de dirección completo
     if (e.target && e.target.addressObject) {
@@ -137,7 +150,7 @@ const BuyerInfoSection = memo(({
       
       // Si el texto tiene longitud suficiente, también intentar buscar direcciones
       if (addressValue && addressValue.length >= 3) {
-        searchAddresses(addressValue);
+        addressStore.searchAddresses(addressValue, 'buyer');
       }
     }
   };
@@ -173,10 +186,11 @@ const BuyerInfoSection = memo(({
   const handleSearchInputChange = (e) => {
     const value = e.target.value;
     setBuyerAddressValue(value);
+    setAddressValue(value);
     
     // Buscar direcciones si hay suficiente texto
     if (value && value.length >= 3) {
-      searchAddresses(value);
+      addressStore.searchAddresses(value, 'buyer');
     }
     
     // Actualizar domicilioComprador
@@ -197,6 +211,7 @@ const BuyerInfoSection = memo(({
       updateBuyerAddressFields(addr, fullAddress);
       setBuyerAddressValue(fullAddress);
       clearSuggestions();
+      setAddressValue(fullAddress);
     }
   };
 
@@ -235,13 +250,6 @@ const BuyerInfoSection = memo(({
   // Mostrar modal de recordatorio de comprobante de domicilio
   const showAddressProofReminder = () => {
     setShowAddressProofModal(true);
-  };
-
-  // Verificar si la dirección está completa
-  const checkAddressComplete = () => {
-    if (!formData.domicilioComprador || formData.domicilioComprador.trim() === '') {
-      showAddressProofReminder();
-    }
   };
 
   // Efecto para añadir event listeners a los campos de identificación y domicilio
@@ -299,44 +307,50 @@ const BuyerInfoSection = memo(({
           />
         </motion.div>
 
-        {/* Buyer Address with Radar Autocomplete */}
+        {/* Buyer Address with Radar Autocomplete - Ahora con tamaño completo */}
         <motion.div className={`govuk-form-group ${errors.domicilioComprador ? 'govuk-form-group--error' : ''}`} variants={itemAnimation}>
           <label htmlFor="domicilioComprador" className="govuk-label">
             Domicilio <span className="text-royal-red">*</span>
           </label>
           <ErrorMessage message={errors.domicilioComprador} />
+          
+          {/* Usamos el mismo estilos que los demás campos para consistencia visual */}
           {radarInitialized !== false ? (
             // Usar RadarAddressAutocomplete si está disponible
-            <RadarAddressAutocomplete
-              value={buyerAddressValue}
-              onChange={handleAddressSelection}
-              required={true}
-              error={errors.domicilioComprador}
-              inputId="domicilioComprador"
-              showMap={false}
-            />
+            <div className="w-full">
+              <RadarAddressAutocomplete
+                value={buyerAddressValue || ''}
+                onChange={handleAddressSelection}
+                required={true}
+                error={errors.domicilioComprador}
+                inputId="domicilioComprador"
+                showMap={false}
+                className="w-full h-full"
+              />
+            </div>
           ) : (
-            // Fallback input con autocompletado básico
-            <div className="address-fallback">
+            // Fallback input con autocompletado básico, altura ajustada para consistencia
+            <div className="address-fallback w-full">
               <input
                 type="text"
-                id="domicilioComprador-fallback"
-                value={buyerAddressValue}
+                id="domicilioComprador"
+                value={addressValue}
                 onChange={handleSearchInputChange}
                 className={addErrorClass("govuk-input w-full", errors.domicilioComprador)}
                 placeholder="Buscar dirección..."
                 required
+                style={{ minHeight: '42px' }}
               />
               
-              {isSearching && (
+              {isBuyerSearching && (
                 <p className="text-sm text-gray-500 mt-1">Buscando...</p>
               )}
               
               {/* Sugerencias de direcciones */}
-              {suggestions.length > 0 && (
+              {buyerSuggestions.length > 0 && (
                 <div className="address-suggestions mt-2 border rounded-md shadow-sm">
                   <ul className="max-h-60 overflow-y-auto">
-                    {suggestions.map((suggestion, index) => {
+                    {buyerSuggestions.map((suggestion, index) => {
                       const formattedAddr = suggestion.raw?.formattedAddress || suggestion.description;
                       return (
                         <li 
