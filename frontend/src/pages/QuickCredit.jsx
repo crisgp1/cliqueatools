@@ -30,6 +30,11 @@ const QuickCredit = () => {
     } else if (option === 'normal') {
       // En una aplicación real, aquí se redireccionaría al cotizador normal
       setQuickCreditActiveComponent('normal');
+      
+      // Disparar un evento personalizado para navegar al CreditForm
+      window.dispatchEvent(new CustomEvent('navigateToSection', {
+        detail: { section: 'credit' }
+      }));
     }
   };
   

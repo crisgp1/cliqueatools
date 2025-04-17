@@ -1,4 +1,4 @@
-/**
+    /**
  * Servicio para manejar las operaciones relacionadas con vehículos
  */
 import { fetchWithTokenCheck, createAuthHeaders } from '../utils/apiUtils';
@@ -64,13 +64,26 @@ export const fetchVehicles = async (token, options = {}, handleApiResponse = nul
  */
 export const createVehicle = async (token, vehicleData, handleApiResponse = null) => {
   try {
-    // Preparar datos para enviar al backend
+    // Preparar datos para enviar al backend, mapeando campos del frontend al formato del backend
     const dataToSend = {
       marca: vehicleData.marca,
       modelo: vehicleData.modelo,
       anio: vehicleData.año,
-      valor: vehicleData.valor,
-      descripcion: vehicleData.descripcion || ''
+      valor: vehicleData.valor, // Mantener valor como lo espera el backend
+      precio_lista: vehicleData.valor, // También incluir precio_lista para el modelo Sequelize
+      descripcion: vehicleData.descripcion || '',
+      // Campos adicionales requeridos por el backend
+      color_exterior: vehicleData.color || '',
+      tipo_vehiculo: vehicleData.tipo || 'automovil',
+      num_serie: vehicleData.numero_serie || '',
+      transmision: vehicleData.transmision || 'manual', // Valor por defecto
+      combustible: vehicleData.combustible || 'gasolina', // Valor por defecto
+      odometro: vehicleData.odometro || 0,
+      condicion: vehicleData.condicion || 'usado',
+      origen: vehicleData.origen || 'nacional',
+      adquisicion: vehicleData.adquisicion || 'compra_directa',
+      estatus_legal: vehicleData.estatus_legal || 'limpio',
+      disponible: vehicleData.disponible !== undefined ? vehicleData.disponible : true
     };
     
     const response = await fetchWithTokenCheck(`${import.meta.env.VITE_API_URL}/vehiculos`, {
@@ -110,13 +123,26 @@ export const createVehicle = async (token, vehicleData, handleApiResponse = null
  */
 export const updateVehicle = async (token, vehicleData, handleApiResponse = null) => {
   try {
-    // Preparar datos para enviar al backend
+    // Preparar datos para enviar al backend, mapeando campos del frontend al formato del backend
     const dataToSend = {
       marca: vehicleData.marca,
       modelo: vehicleData.modelo,
       anio: vehicleData.año,
-      valor: vehicleData.valor,
-      descripcion: vehicleData.descripcion || ''
+      valor: vehicleData.valor, // Mantener valor como lo espera el backend
+      precio_lista: vehicleData.valor, // También incluir precio_lista para el modelo Sequelize
+      descripcion: vehicleData.descripcion || '',
+      // Campos adicionales requeridos por el backend
+      color_exterior: vehicleData.color || '',
+      tipo_vehiculo: vehicleData.tipo || 'automovil',
+      num_serie: vehicleData.numero_serie || '',
+      transmision: vehicleData.transmision || 'manual', // Valor por defecto
+      combustible: vehicleData.combustible || 'gasolina', // Valor por defecto
+      odometro: vehicleData.odometro || 0,
+      condicion: vehicleData.condicion || 'usado',
+      origen: vehicleData.origen || 'nacional',
+      adquisicion: vehicleData.adquisicion || 'compra_directa',
+      estatus_legal: vehicleData.estatus_legal || 'limpio',
+      disponible: vehicleData.disponible !== undefined ? vehicleData.disponible : true
     };
     
     const response = await fetchWithTokenCheck(`${import.meta.env.VITE_API_URL}/vehiculos/${vehicleData.id}`, {

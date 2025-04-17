@@ -1,42 +1,81 @@
 module.exports = (sequelize, DataTypes) => {
   const Credito = sequelize.define('Credito', {
-    credito_id: {
-      type: DataTypes.INTEGER,
+    id_credito: {
+      type: DataTypes.UUID,
       primaryKey: true,
-      autoIncrement: true,
-      field: 'credito_id'
+      defaultValue: DataTypes.UUIDV4,
+      field: 'id_credito'
     },
-    cliente_id: {
-      type: DataTypes.INTEGER,
+    id_cliente: {
+      type: DataTypes.UUID,
       allowNull: false,
-      field: 'cliente_id',
+      field: 'id_cliente',
       references: {
-        model: 'clientes',
-        key: 'cliente_id'
+        model: 'clientes.datos',
+        key: 'id_cliente'
       }
     },
-    vehiculo_id: {
-      type: DataTypes.INTEGER,
+    id_vehiculo: {
+      type: DataTypes.UUID,
       allowNull: false,
-      field: 'vehiculo_id',
+      field: 'id_vehiculo',
       references: {
-        model: 'vehiculos',
-        key: 'vehiculo_id'
+        model: 'inventario.vehiculos',
+        key: 'id_vehiculo'
       }
     },
-    banco_id: {
-      type: DataTypes.INTEGER,
+    id_banco: {
+      type: DataTypes.UUID,
       allowNull: false,
-      field: 'banco_id',
+      field: 'id_banco',
       references: {
-        model: 'bancos',
-        key: 'banco_id'
+        model: 'bancos.instituciones',
+        key: 'id_banco'
       }
+    },
+    id_plan: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'id_plan',
+      references: {
+        model: 'bancos.planes_financiamiento',
+        key: 'id_plan'
+      }
+    },
+    folio: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      unique: true,
+      field: 'folio'
+    },
+    estado: {
+      type: DataTypes.ENUM('solicitud', 'analisis', 'aprobado', 'rechazado', 'activo', 'pagado', 'cancelado', 'mora', 'restructurado'),
+      allowNull: false,
+      defaultValue: 'solicitud',
+      field: 'estado'
     },
     monto_financiado: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
-      field: 'monto_financiado'
+      field: 'monto_financiado',
+      validate: {
+        min: {
+          args: [0],
+          msg: 'El monto financiado debe ser mayor a 0'
+        }
+      }
+    },
+    enganche: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'enganche',
+      validate: {
+        min: {
+          args: [0],
+          msg: 'El enganche no puede ser negativo'
+        }
+      }
     },
     plazo_meses: {
       type: DataTypes.INTEGER,
@@ -52,47 +91,213 @@ module.exports = (sequelize, DataTypes) => {
         }
       }
     },
+    monto_mensual: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      field: 'monto_mensual',
+      validate: {
+        min: {
+          args: [0],
+          msg: 'El monto mensual debe ser mayor a 0'
+        }
+      }
+    },
     tasa_anual: {
       type: DataTypes.DECIMAL(5, 2),
-      allowNull: true,
+      allowNull: false,
       field: 'tasa_anual',
-      comment: 'Tasa de interés anual, ej: 12.50 = 12.5%'
+      comment: 'Tasa de interés anual, ej: 12.50 = 12.5%',
+      validate: {
+        min: {
+          args: [0],
+          msg: 'La tasa anual no puede ser negativa'
+        },
+        max: {
+          args: [100],
+          msg: 'La tasa anual no puede ser mayor a 100%'
+        }
+      }
     },
     cat_personalizado: {
       type: DataTypes.DECIMAL(5, 2),
-      allowNull: true,
+      allowNull: false,
       field: 'cat_personalizado',
-      comment: 'CAT personalizado, si es diferente al del banco'
+      comment: 'CAT personalizado',
+      validate: {
+        min: {
+          args: [0],
+          msg: 'El CAT no puede ser negativo'
+        },
+        max: {
+          args: [100],
+          msg: 'El CAT no puede ser mayor a 100%'
+        }
+      }
+    },
+    comision_apertura: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'comision_apertura'
+    },
+    seguro_auto: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'seguro_auto'
+    },
+    seguro_vida: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'seguro_vida'
+    },
+    otros_cargos: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'otros_cargos'
+    },
+    fecha_solicitud: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'fecha_solicitud'
+    },
+    fecha_aprobacion: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      field: 'fecha_aprobacion'
+    },
+    fecha_inicio: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      field: 'fecha_inicio'
+    },
+    fecha_vencimiento: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      field: 'fecha_vencimiento'
+    },
+    dia_pago: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'dia_pago',
+      validate: {
+        min: {
+          args: [1],
+          msg: 'El día de pago debe ser entre 1 y 31'
+        },
+        max: {
+          args: [31],
+          msg: 'El día de pago debe ser entre 1 y 31'
+        }
+      }
+    },
+    observaciones: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'observaciones'
     },
     fecha_creacion: {
       type: DataTypes.DATE,
+      allowNull: false,
       defaultValue: DataTypes.NOW,
       field: 'fecha_creacion'
+    },
+    fecha_actualizacion: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'fecha_actualizacion'
+    },
+    creado_por: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'creado_por',
+      references: {
+        model: 'autenticacion.usuarios',
+        key: 'id_usuario'
+      }
+    },
+    actualizado_por: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'actualizado_por',
+      references: {
+        model: 'autenticacion.usuarios',
+        key: 'id_usuario'
+      }
     }
   }, {
     tableName: 'creditos',
-    schema: 'cliquea',
-    timestamps: false, // Usamos fecha_creacion en su lugar
+    schema: 'financiamiento',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion',
     underscored: true
   });
 
   Credito.associate = function(models) {
     // Un crédito pertenece a un cliente
     Credito.belongsTo(models.Cliente, {
-      foreignKey: 'cliente_id',
+      foreignKey: 'id_cliente',
       as: 'cliente'
     });
 
     // Un crédito pertenece a un vehículo
     Credito.belongsTo(models.Vehiculo, {
-      foreignKey: 'vehiculo_id',
+      foreignKey: 'id_vehiculo',
       as: 'vehiculo'
     });
 
     // Un crédito pertenece a un banco
     Credito.belongsTo(models.Banco, {
-      foreignKey: 'banco_id',
+      foreignKey: 'id_banco',
       as: 'banco'
+    });
+    
+    // Commented out until Plan model is properly defined
+    // Credito.belongsTo(models.Plan, {
+    //   foreignKey: 'id_plan',
+    //   as: 'plan',
+    //   allowNull: true
+    // });
+    
+    // Commented out until TablaAmortizacion model is properly defined
+    // Credito.hasMany(models.TablaAmortizacion, {
+    //   foreignKey: 'id_credito',
+    //   as: 'tabla_amortizacion'
+    // });
+    
+    // Commented out until Pago model is properly defined
+    // Credito.hasMany(models.Pago, {
+    //   foreignKey: 'id_credito',
+    //   as: 'pagos'
+    // });
+    
+    // Commented out until DocumentoCredito model is properly defined
+    // Credito.hasMany(models.DocumentoCredito, {
+    //   foreignKey: 'id_credito',
+    //   as: 'documentos'
+    // });
+    
+    // Commented out until HistorialEstatusCredito model is properly defined
+    // Credito.hasMany(models.HistorialEstatusCredito, {
+    //   foreignKey: 'id_credito',
+    //   as: 'historial_estatus'
+    // });
+    
+    // Un crédito fue creado por un usuario
+    Credito.belongsTo(models.Usuario, {
+      foreignKey: 'creado_por',
+      as: 'creador'
+    });
+    
+    // Un crédito fue actualizado por un usuario
+    Credito.belongsTo(models.Usuario, {
+      foreignKey: 'actualizado_por',
+      as: 'actualizador'
     });
   };
 

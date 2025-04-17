@@ -6,19 +6,23 @@ const path = require('path');
 const { testConnection, sequelize } = require('./config/configDB');
 const routes = require('./routes');
 
+// Configuración de seguridad para JWT
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'clave-secreta-temporal-desarrollo';
+  console.log('⚠️ JWT_SECRET no definido, usando valor temporal para desarrollo');
+}
+
 // Inicializar Express
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000; // Valor por defecto en caso de que PORT no esté definido
 
 // Middleware
 // Configuración de CORS para permitir solicitudes desde el frontend
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || '*' // Origen específico en producción
-    : '*', // Permitir cualquier origen en desarrollo
-  credentials: true, // Permitir credenciales (cookies, headers authorization, etc)
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
-  allowedHeaders: ['Content-Type', 'Authorization'] // Headers permitidos
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Permite configurarlo por variable de entorno
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
@@ -80,11 +84,38 @@ const initServer = async () => {
       process.exit(1);
     }
     
-    // Sincronizar modelos con la base de datos (solo en desarrollo)
-    if (process.env.NODE_ENV === 'development' && process.env.SYNC_DB === 'true') {
-      console.log('Sincronizando modelos con la base de datos...');
-      await sequelize.sync({ alter: true });
-      console.log('Sincronización completada.');
+    // 1. Asegurarse de que el esquema inventario existe
+    try {
+      await sequelize.query('CREATE SCHEMA IF NOT EXISTS inventario');
+      console.log('✅ Esquema inventario verificado');
+    } catch (schemaError) {
+      console.error('Error al verificar el esquema inventario:', schemaError);
+      // Continuar de todos modos, ya que el schema podría existir
+    }
+
+    // 2. Sincronización de modelos - Modo seguro
+    console.log('Sincronizando modelos con la base de datos...');
+    try {
+      await sequelize.sync({
+        force: false,    // No recrear tablas
+        alter: false,    // No alterar tablas existentes
+        hooks: false     // Desactivar hooks para evitar errores en cascada
+      });
+      console.log('✅ Modelos sincronizados correctamente');
+    } catch (syncError) {
+      console.error('Error al sincronizar modelos:', syncError);
+      
+      // Información detallada del error
+      if (syncError.parent) {
+        console.error('Detalles del error:', {
+          mensaje: syncError.parent.message,
+          código: syncError.parent.code,
+          sql: syncError.sql || 'No hay SQL disponible'
+        });
+      }
+      
+      // Continuar a pesar del error - esto permite que la API funcione parcialmente
+      console.warn('⚠️ Continuando con inicialización a pesar de errores en sincronización');
     }
     
     // Iniciar servidor
@@ -93,7 +124,7 @@ const initServer = async () => {
       console.log(`Modo: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {
-    console.error('Error al iniciar el servidor:', error);
+    console.error('Error fatal al iniciar el servidor:', error);
     process.exit(1);
   }
 };

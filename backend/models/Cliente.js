@@ -1,10 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
   const Cliente = sequelize.define('Cliente', {
-    cliente_id: {
-      type: DataTypes.INTEGER,
+    id_cliente: {
+      type: DataTypes.UUID,
       primaryKey: true,
-      autoIncrement: true,
-      field: 'cliente_id'
+      defaultValue: DataTypes.UUIDV4,
+      field: 'id_cliente'
     },
     nombre: {
       type: DataTypes.STRING(100),
@@ -52,21 +52,21 @@ module.exports = (sequelize, DataTypes) => {
       field: 'codigo_postal'
     }
   }, {
-    tableName: 'clientes',
-    schema: 'cliquea',
+    tableName: 'datos', // Nombre correcto de la tabla según init.sql
+    schema: 'clientes', // Schema correcto según init.sql
     timestamps: false // La tabla clientes no tiene timestamps según el esquema
   });
 
   Cliente.associate = function(models) {
     // Un cliente puede tener muchos créditos
     Cliente.hasMany(models.Credito, {
-      foreignKey: 'cliente_id',
+      foreignKey: 'id_cliente',
       as: 'creditos'
     });
 
     // Un cliente puede tener muchos contratos
     Cliente.hasMany(models.Contrato, {
-      foreignKey: 'cliente_id',
+      foreignKey: 'id_cliente',
       as: 'contratos'
     });
   };

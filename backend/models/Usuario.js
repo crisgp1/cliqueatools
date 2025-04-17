@@ -1,10 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
   const Usuario = sequelize.define('Usuario', {
-    usuario_id: {
-      type: DataTypes.INTEGER,
+    id_usuario: {
+      type: DataTypes.UUID,
       primaryKey: true,
-      autoIncrement: true,
-      field: 'usuario_id'
+      defaultValue: DataTypes.UUIDV4,
+      field: 'id_usuario'
     },
     numero_empleado: {
       type: DataTypes.STRING(20),
@@ -12,39 +12,45 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       field: 'numero_empleado'
     },
-    usuario: {
+    nombre_usuario: {
       type: DataTypes.STRING(50),
       unique: true,
       allowNull: false,
-      field: 'usuario'
+      field: 'nombre_usuario'
     },
-    hashed_password: {
+    contrasena_hash: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      field: 'hashed_password'
+      field: 'contrasena_hash'
     },
-    rol: {
-      type: DataTypes.ENUM('capturista', 'director', 'creditos', 'gerencia', 'admin'),
+    correo: {
+      type: DataTypes.STRING(150),
+      unique: true,
+      allowNull: false,
+      field: 'correo'
+    },
+      rol: {
+      type: DataTypes.ENUM('capturista', 'director', 'creditos', 'gerencia', 'administrador', 'vendedor', 'mecanico', 'valuador', 'contador', 'atencion_cliente', 'logistica', 'marketing', 'legal', 'rh'),
       allowNull: false,
       field: 'rol'
     },
-    created_at: {
+    fecha_creacion: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      field: 'created_at'
+      field: 'fecha_creacion'
     },
-    updated_at: {
+    fecha_actualizacion: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      field: 'updated_at'
+      field: 'fecha_actualizacion'
     }
   }, {
     tableName: 'usuarios',
-    schema: 'cliquea',
+    schema: 'autenticacion', // Explícitamente declaramos el schema
     timestamps: true,
     underscored: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
   });
 
   Usuario.associate = function(models) {

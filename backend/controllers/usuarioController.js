@@ -6,8 +6,8 @@ const { Usuario } = require('../models');
 const generarToken = (usuario) => {
   return jwt.sign(
     { 
-      id: usuario.usuario_id, 
-      usuario: usuario.usuario,
+      id: usuario.id_usuario, 
+      usuario: usuario.nombre_usuario,
       rol: usuario.rol 
     },
     process.env.JWT_SECRET,
@@ -20,11 +20,11 @@ const usuarioController = {
   // Registrar un nuevo usuario
   registro: async (req, res) => {
     try {
-      const { numero_empleado, usuario, password, rol } = req.body;
+      const { numero_empleado, usuario, password, rol, correo } = req.body;
 
       // Verificar si el usuario ya existe
       const usuarioExistente = await Usuario.findOne({ 
-        where: { usuario }
+        where: { nombre_usuario: usuario }
       });
 
       if (usuarioExistente) {
@@ -36,18 +36,19 @@ const usuarioController = {
 
       // Encriptar contraseña
       const salt = await bcrypt.genSalt(10);
-      const hashed_password = await bcrypt.hash(password, salt);
+      const contrasena_hash = await bcrypt.hash(password, salt);
 
       // Crear nuevo usuario
       const nuevoUsuario = await Usuario.create({
         numero_empleado,
-        usuario,
-        hashed_password,
+        nombre_usuario: usuario,
+        contrasena_hash,
+        correo,
         rol
       });
 
       // Excluir la contraseña en la respuesta
-      const { hashed_password: _, ...usuarioData } = nuevoUsuario.toJSON();
+      const { contrasena_hash: _, ...usuarioData } = nuevoUsuario.toJSON();
 
       res.status(201).json({
         success: true,
@@ -71,7 +72,7 @@ const usuarioController = {
 
       // Verificar si el usuario existe
       const usuarioEncontrado = await Usuario.findOne({
-        where: { usuario }
+        where: { nombre_usuario: usuario }
       });
 
       if (!usuarioEncontrado) {
@@ -84,7 +85,7 @@ const usuarioController = {
       // Verificar contraseña
       const passwordCorrecta = await bcrypt.compare(
         password, 
-        usuarioEncontrado.hashed_password
+        usuarioEncontrado.contrasena_hash
       );
 
       if (!passwordCorrecta) {
@@ -98,7 +99,7 @@ const usuarioController = {
       const token = generarToken(usuarioEncontrado);
 
       // Excluir la contraseña en la respuesta
-      const { hashed_password: _, ...usuarioData } = usuarioEncontrado.toJSON();
+      const { contrasena_hash: _, ...usuarioData } = usuarioEncontrado.toJSON();
 
       res.json({
         success: true,
@@ -122,7 +123,7 @@ const usuarioController = {
   obtenerTodos: async (req, res) => {
     try {
       const usuarios = await Usuario.findAll({
-        attributes: { exclude: ['hashed_password'] }
+        attributes: { exclude: ['contrasena_hash'] }
       });
 
       res.json({
@@ -145,7 +146,7 @@ const usuarioController = {
       const { id } = req.params;
       
       const usuario = await Usuario.findByPk(id, {
-        attributes: { exclude: ['hashed_password'] }
+        attributes: { exclude: ['contrasena_hash'] }
       });
 
       if (!usuario) {
@@ -173,7 +174,7 @@ const usuarioController = {
   actualizar: async (req, res) => {
     try {
       const { id } = req.params;
-      const { numero_empleado, usuario, password, rol } = req.body;
+      const { numero_empleado, usuario, password, rol, correo } = req.body;
 
       const usuarioExistente = await Usuario.findByPk(id);
 
@@ -185,19 +186,24 @@ const usuarioController = {
       }
 
       // Si se proporciona una nueva contraseña, encriptarla
-      let datosActualizar = { numero_empleado, usuario, rol };
+      let datosActualizar = { 
+        numero_empleado, 
+        nombre_usuario: usuario, 
+        correo,
+        rol 
+      };
       
       if (password) {
         const salt = await bcrypt.genSalt(10);
-        const hashed_password = await bcrypt.hash(password, salt);
-        datosActualizar.hashed_password = hashed_password;
+        const contrasena_hash = await bcrypt.hash(password, salt);
+        datosActualizar.contrasena_hash = contrasena_hash;
       }
 
       // Actualizar usuario
       await usuarioExistente.update(datosActualizar);
 
       // Excluir la contraseña en la respuesta
-      const { hashed_password: _, ...usuarioActualizado } = usuarioExistente.toJSON();
+      const { contrasena_hash: _, ...usuarioActualizado } = usuarioExistente.toJSON();
 
       res.json({
         success: true,

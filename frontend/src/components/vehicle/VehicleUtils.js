@@ -26,18 +26,37 @@ export const formatCurrency = (value) => {
 export const validateVehicle = (vehicle) => {
   if (!vehicle) return false;
   
-  // Validar campos obligatorios
+  // Validar campos obligatorios básicos
   if (!vehicle.marca || !vehicle.modelo || !vehicle.valor) {
+    console.error('Falta marca, modelo o valor');
     return false;
   }
   
   // Validar que el valor sea un número positivo
   if (isNaN(vehicle.valor) || vehicle.valor <= 0) {
+    console.error('Valor no es un número positivo');
     return false;
   }
   
   // Validar que el año sea un número positivo
   if (isNaN(vehicle.año) || vehicle.año <= 0) {
+    console.error('Año no es un número positivo');
+    return false;
+  }
+  
+  // Validar campos adicionales requeridos
+  if (!vehicle.color) {
+    console.error('Falta color');
+    return false;
+  }
+  
+  if (!vehicle.tipo) {
+    console.error('Falta tipo');
+    return false;
+  }
+  
+  if (!vehicle.numero_serie) {
+    console.error('Falta número de serie');
     return false;
   }
   
@@ -82,8 +101,8 @@ export const getYearsList = (startYear = 1990) => {
 };
 
 /**
- * Crea un nuevo objeto vehículo vacío
- * @returns {Object} - Objeto vehículo vacío
+ * Crea un nuevo objeto vehículo vacío con valores predeterminados para campos requeridos
+ * @returns {Object} - Objeto vehículo con valores predeterminados
  */
 export const createEmptyVehicle = () => {
   return {
@@ -93,12 +112,21 @@ export const createEmptyVehicle = () => {
     valor: '',
     descripcion: '',
     color: '',
-    tipo: '',
+    tipo: 'automovil',  // Valor predeterminado para tipo_vehiculo
     numero_motor: '',
     numero_serie: '',
     placas: '',
     numero_circulacion: '',
     numero_factura: '',
-    refrendos: ''
+    refrendos: '',
+    // Campos adicionales con valores predeterminados para el backend
+    transmision: 'manual',
+    combustible: 'gasolina',
+    odometro: 0,
+    condicion: 'usado',
+    origen: 'nacional',
+    adquisicion: 'compra_directa',
+    estatus_legal: 'limpio',
+    disponible: true
   };
 };

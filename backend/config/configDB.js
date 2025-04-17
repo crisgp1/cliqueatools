@@ -2,7 +2,7 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const { Sequelize } = require('sequelize');
 
-// Configuración de Sequelize
+// Configuración de la base de datos con el schema inventario
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -11,20 +11,18 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    // SSL configuración - requerido para Render y otros proveedores cloud
-    // Usamos variables de entorno o valores seguros por defecto
+    logging: false, // Cambiar a console.log para ver todas las consultas SQL
     dialectOptions: {
       ssl: {
-        require: process.env.DB_SSL === 'true' || true, // Habilitado por defecto
-        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' || false // Deshabilitado por defecto para mayor compatibilidad
+        require: process.env.DB_SSL === 'true' || true,
+        rejectUnauthorized: false // No recomendado para producción
       }
     },
     define: {
-      timestamps: true, // Por defecto agrega createdAt y updatedAt
-      underscored: true, // snake_case para nombres de columnas
-      freezeTableName: false, // pluralizar nombres de tabla
-      schema: process.env.DB_SCHEMA // Usar el schema definido en .env
+      timestamps: true, // Crea campos createdAt y updatedAt
+      underscored: true, // Usa snake_case para nombres de columnas
+      freezeTableName: false, // Permite que Sequelize pluralice nombres de tablas
+      schema: 'inventario' // Establece el schema a inventario donde están tus tablas
     },
     pool: {
       max: 5,
@@ -39,10 +37,10 @@ const sequelize = new Sequelize(
 const testConnection = async () => {
   try {
     await sequelize.authenticate();
-    console.log('Conexión a la base de datos establecida correctamente.');
+    console.log('✅ Conexión a la base de datos establecida correctamente.');
     return true;
   } catch (error) {
-    console.error('Error al conectar a la base de datos:', error);
+    console.error('❌ No se pudo conectar a la base de datos:', error);
     return false;
   }
 };

@@ -21,8 +21,27 @@ const CreateAccount = ({ onLoginClick }) => {
     usuario: '',
     password: '',
     confirmPassword: '',
+    correo: '',
     rol: 'capturista'
   });
+  
+  // Opciones de rol según init.sql
+  const roleOptions = [
+    'capturista',
+    'director',
+    'creditos',
+    'gerencia',
+    'administrador',
+    'vendedor',
+    'mecanico',
+    'valuador',
+    'contador',
+    'atencion_cliente',
+    'logistica',
+    'marketing',
+    'legal',
+    'rh'
+  ];
 
   // Estados para UI
   const [error, setError] = useState('');
@@ -58,6 +77,17 @@ const CreateAccount = ({ onLoginClick }) => {
     
     if (formData.password !== formData.confirmPassword) {
       setError('Las contraseñas no coinciden');
+      return false;
+    }
+    
+    if (!formData.correo) {
+      setError('Ingresa tu correo electrónico');
+      return false;
+    }
+    
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(formData.correo)) {
+      setError('Ingresa un correo electrónico válido');
       return false;
     }
     
@@ -188,6 +218,21 @@ const CreateAccount = ({ onLoginClick }) => {
                         placeholder="Elige un nombre de usuario"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" htmlFor="correo">
+                        Correo electrónico
+                      </label>
+                      <input
+                        id="correo"
+                        name="correo"
+                        type="email"
+                        value={formData.correo}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-black focus:border-black"
+                        placeholder="ejemplo@correo.com"
+                      />
+                    </div>
                     
                     <div>
                       <label className="block text-sm font-medium mb-2" htmlFor="password">
@@ -277,6 +322,25 @@ const CreateAccount = ({ onLoginClick }) => {
                         className="w-full p-3 border border-gray-300 rounded-md focus:ring-black focus:border-black"
                         placeholder="Si aplica"
                       />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2" htmlFor="rol">
+                        Rol
+                      </label>
+                      <select
+                        id="rol"
+                        name="rol"
+                        value={formData.rol}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-black focus:border-black"
+                      >
+                        {roleOptions.map(role => (
+                          <option key={role} value={role}>
+                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     
                     <div className="flex items-center">

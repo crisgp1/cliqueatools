@@ -1,36 +1,36 @@
 module.exports = (sequelize, DataTypes) => {
   const Cita = sequelize.define('Cita', {
-    cita_id: {
-      type: DataTypes.INTEGER,
+    id_cita: {
+      type: DataTypes.UUID,
       primaryKey: true,
-      autoIncrement: true,
-      field: 'cita_id'
+      defaultValue: DataTypes.UUIDV4,
+      field: 'id_cita'
     },
-    cliente_id: {
-      type: DataTypes.INTEGER,
+    id_cliente: {
+      type: DataTypes.UUID,
       allowNull: false,
-      field: 'cliente_id',
+      field: 'id_cliente',
       references: {
-        model: 'clientes',
-        key: 'cliente_id'
+        model: { tableName: 'datos', schema: 'clientes' },
+        key: 'id_cliente'
       }
     },
-    usuario_id: {
-      type: DataTypes.INTEGER,
+    id_usuario: {
+      type: DataTypes.UUID,
       allowNull: true,
-      field: 'usuario_id',
+      field: 'id_usuario',
       references: {
-        model: 'usuarios',
-        key: 'usuario_id'
+        model: { tableName: 'usuarios', schema: 'autenticacion' },
+        key: 'id_usuario'
       }
     },
-    vehiculo_id: {
-      type: DataTypes.INTEGER,
+    id_vehiculo: {
+      type: DataTypes.UUID,
       allowNull: true,
-      field: 'vehiculo_id',
+      field: 'id_vehiculo',
       references: {
-        model: 'vehiculos',
-        key: 'vehiculo_id'
+        model: { tableName: 'vehiculos', schema: 'inventario' },
+        key: 'id_vehiculo'
       }
     },
     fecha_cita: {
@@ -53,42 +53,44 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       field: 'comentarios'
     },
-    created_at: {
+    fecha_creacion: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      field: 'created_at'
+      field: 'fecha_creacion'
     },
-    updated_at: {
+    fecha_actualizacion: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      field: 'updated_at'
+      field: 'fecha_actualizacion'
     }
   }, {
     tableName: 'citas',
-    schema: 'cliquea',
+    schema: 'servicio', // Asignamos la tabla al schema de servicio
     timestamps: true,
-    underscored: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
   });
 
   Cita.associate = function(models) {
     // Una cita pertenece a un cliente
     Cita.belongsTo(models.Cliente, {
-      foreignKey: 'cliente_id',
-      as: 'cliente'
+      foreignKey: 'id_cliente',
+      as: 'cliente',
+      targetKey: 'id_cliente'
     });
 
     // Una cita puede pertenecer a un usuario
     Cita.belongsTo(models.Usuario, {
-      foreignKey: 'usuario_id',
-      as: 'usuario'
+      foreignKey: 'id_usuario',
+      as: 'usuario',
+      targetKey: 'id_usuario'
     });
 
     // Una cita puede estar relacionada con un vehículo
     Cita.belongsTo(models.Vehiculo, {
-      foreignKey: 'vehiculo_id',
-      as: 'vehiculo'
+      foreignKey: 'id_vehiculo',
+      as: 'vehiculo',
+      targetKey: 'id_vehiculo'
     });
   };
 
