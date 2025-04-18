@@ -47,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'contratos',
-    schema: 'cliquea',
+    schema: 'ventas',
     timestamps: false // La tabla contratos no tiene timestamps según el esquema
   });
 

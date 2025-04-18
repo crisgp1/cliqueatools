@@ -5,6 +5,11 @@ import { persist } from 'zustand/middleware';
 const useNavigationStore = create(
   persist(
     (set, get) => ({
+      // Estado para el menú móvil
+      mobileMenu: {
+        isOpen: false
+      },
+      
       // Estado para el cotizador rápido
       quickCredit: {
         activeComponent: 'menu',
@@ -163,6 +168,35 @@ const useNavigationStore = create(
             selectedBank: null
           }
         });
+      },
+      
+      // Funciones para controlar el menú móvil
+      toggleMobileMenu: () => {
+        const { mobileMenu } = get();
+        set({
+          mobileMenu: {
+            ...mobileMenu,
+            isOpen: !mobileMenu.isOpen
+          }
+        });
+      },
+      
+      setMobileMenuOpen: () => {
+        set(state => ({
+          mobileMenu: {
+            ...state.mobileMenu,
+            isOpen: true
+          }
+        }));
+      },
+      
+      setMobileMenuClosed: () => {
+        set(state => ({
+          mobileMenu: {
+            ...state.mobileMenu,
+            isOpen: false
+          }
+        }));
       }
     }),
     {

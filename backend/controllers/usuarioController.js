@@ -34,6 +34,18 @@ const usuarioController = {
         });
       }
 
+      // Verificar si el correo ya existe
+      const correoExistente = await Usuario.findOne({
+        where: { correo }
+      });
+
+      if (correoExistente) {
+        return res.status(400).json({
+          success: false,
+          mensaje: 'El correo electrónico ya está registrado'
+        });
+      }
+
       // Encriptar contraseña
       const salt = await bcrypt.genSalt(10);
       const contrasena_hash = await bcrypt.hash(password, salt);
@@ -70,25 +82,34 @@ const usuarioController = {
     try {
       const { usuario, password } = req.body;
 
+      console.log('Intento de login para usuario:', usuario);
+
       // Verificar si el usuario existe
       const usuarioEncontrado = await Usuario.findOne({
         where: { nombre_usuario: usuario }
       });
 
       if (!usuarioEncontrado) {
+        console.log('Usuario no encontrado:', usuario);
         return res.status(401).json({ 
           success: false, 
           mensaje: 'Credenciales inválidas' 
         });
       }
 
+      console.log('Usuario encontrado:', usuarioEncontrado.nombre_usuario);
+
       // Verificar contraseña
+      console.log('Verificando contraseña...');
       const passwordCorrecta = await bcrypt.compare(
         password, 
         usuarioEncontrado.contrasena_hash
       );
 
+      console.log('Resultado de verificación de contraseña:', passwordCorrecta);
+
       if (!passwordCorrecta) {
+        console.log('Contraseña incorrecta para usuario:', usuario);
         return res.status(401).json({ 
           success: false, 
           mensaje: 'Credenciales inválidas' 
@@ -100,6 +121,8 @@ const usuarioController = {
 
       // Excluir la contraseña en la respuesta
       const { contrasena_hash: _, ...usuarioData } = usuarioEncontrado.toJSON();
+
+      console.log('Login exitoso para usuario:', usuario);
 
       res.json({
         success: true,
@@ -183,6 +206,34 @@ const usuarioController = {
           success: false, 
           mensaje: 'Usuario no encontrado' 
         });
+      }
+
+      // Verificar si el correo ya está en uso por otro usuario
+      if (correo && correo !== usuarioExistente.correo) {
+        const correoExistente = await Usuario.findOne({
+          where: { correo }
+        });
+
+        if (correoExistente) {
+          return res.status(400).json({
+            success: false,
+            mensaje: 'El correo electrónico ya está registrado por otro usuario'
+          });
+        }
+      }
+
+      // Verificar si el nombre de usuario ya está en uso por otro usuario
+      if (usuario && usuario !== usuarioExistente.nombre_usuario) {
+        const nombreUsuarioExistente = await Usuario.findOne({
+          where: { nombre_usuario: usuario }
+        });
+
+        if (nombreUsuarioExistente) {
+          return res.status(400).json({
+            success: false,
+            mensaje: 'El nombre de usuario ya está en uso por otro usuario'
+          });
+        }
       }
 
       // Si se proporciona una nueva contraseña, encriptarla

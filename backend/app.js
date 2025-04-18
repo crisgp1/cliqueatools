@@ -93,6 +93,15 @@ const initServer = async () => {
       // Continuar de todos modos, ya que el schema podría existir
     }
 
+    // 1.1 Asegurarse de que el esquema cliquea existe (añadido para resolver el error)
+    try {
+      await sequelize.query('CREATE SCHEMA IF NOT EXISTS cliquea');
+      console.log('✅ Esquema cliquea verificado');
+    } catch (schemaError) {
+      console.error('Error al verificar el esquema cliquea:', schemaError);
+      // Continuar de todos modos, ya que el schema podría existir
+    }
+
     // 2. Sincronización de modelos - Modo seguro
     console.log('Sincronizando modelos con la base de datos...');
     try {

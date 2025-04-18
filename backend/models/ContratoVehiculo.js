@@ -5,27 +5,52 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       primaryKey: true,
       allowNull: false,
-      field: 'contrato_id',
+      field: 'id_contrato', // Cambiado para coincidir con el esquema en init.sql
       references: {
         model: 'contratos',
-        key: 'contrato_id'
+        key: 'id_contrato'
       }
     },
     vehiculo_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       allowNull: false,
-      field: 'vehiculo_id',
+      field: 'id_vehiculo', // Cambiado para coincidir con el esquema en init.sql
       references: {
         model: 'vehiculos',
-        key: 'vehiculo_id'
+        key: 'id_vehiculo'
       }
+    },
+    // Añadimos los campos adicionales que existen en la tabla vehiculos_contrato
+    precio_venta: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      field: 'precio_venta'
+    },
+    comision: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'comision'
+    },
+    impuestos: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'impuestos'
+    },
+    descuento: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'descuento'
     }
-    // No necesitamos campos adicionales en esta tabla pivote simple
   }, {
-    tableName: 'contrato_vehiculos',
-    schema: 'cliquea',
-    timestamps: false, // La tabla pivote no tiene timestamps según el esquema
+    tableName: 'vehiculos_contrato', // Cambiado para coincidir con el esquema en init.sql
+    schema: 'ventas', // Cambiado para coincidir con el esquema en init.sql
+    timestamps: true, // La tabla tiene fecha_creacion según el esquema
+    createdAt: 'fecha_creacion',
+    updatedAt: false, // No hay campo de actualización
     underscored: true
   });
 
