@@ -50,26 +50,20 @@ const vehiculoController = {
 
       // Crear vehículo con valores por defecto completos
       const nuevoVehiculo = await Vehiculo.create({
-        marca: marca || '',
-        modelo: modelo || '',
-        anio: anio || new Date().getFullYear(),
-        descripcion: descripcion || '',
-        color_exterior: color_exterior?.trim() || 'No especificado',
-        color_interior: color_interior?.trim() || 'No especificado',
-        transmision: transmision?.toLowerCase() || 'automática',
-        combustible: combustible?.toLowerCase() || 'gasolina',
-        cilindros: cilindros || 4,
-        cilindrada: cilindrada || 0,
-        potencia: potencia || 0,
-        odometro: odometro || 0,
-        unidad_odometro: unidad_odometro?.toLowerCase() || 'km',
-        condicion: condicion?.toLowerCase() || 'nuevo',
-        origen: origen?.toLowerCase() || 'nacional',
-        estatus_legal: estatus_legal?.toLowerCase() || 'limpio',
-        precio_lista: Number(precio_lista || valor || 0),
-        precio_compra: Number(precio_compra || 0),
-        precio_minimo: Number(precio_minimo || 0),
-        adquisicion: adquisicion?.toLowerCase() || 'compra directa',
+        marca: marca,
+        modelo: modelo,
+        anio: parseInt(anio),
+        precio_lista: parseFloat(precio_lista),
+        color_exterior: color_exterior,
+        color_interior: color_interior,
+        transmision: transmision,
+        combustible: combustible,
+        odometro: parseInt(odometro),
+        unidad_odometro: unidad_odometro,
+        condicion: condicion,
+        origen: origen,
+        estatus_legal: estatus_legal,
+        adquisicion: adquisicion,
         fecha_adquisicion: fecha_adquisicion || new Date(),
         observaciones: observaciones || '',
         disponible: disponible !== undefined ? disponible : true,
@@ -81,13 +75,17 @@ const vehiculoController = {
       });
 
       // Crear respuesta compatible con frontend
-      const responseData = nuevoVehiculo.toJSON();
-      responseData.vehiculo_id = responseData.id_vehiculo;
+      // Crear respuesta compatible con frontend
+      const responseData = {
+        vehiculo_id: nuevoVehiculo.id_vehiculo,
+        ...nuevoVehiculo.toJSON()
+      };
 
       res.status(201).json({
         success: true,
-        mensaje: 'Vehículo creado exitosamente',
-        data: responseData
+        message: 'Vehículo creado exitosamente',
+        data: responseData,
+        id: nuevoVehiculo.id_vehiculo
       });
     } catch (error) {
       console.error('Error detallado:', {
@@ -102,7 +100,7 @@ const vehiculoController = {
       
       res.status(500).json({
         success: false,
-        mensaje: 'Error en la creación del vehículo',
+        message: 'Error en la creación del vehículo',
         error: {
           tipo: error.name,
           mensaje: error.message,
