@@ -4,6 +4,19 @@ import NotificationContainer from './components/common/NotificationContainer';
 import { registerRedirectFunction } from './utils/apiUtils';
 import useVehicleStore from './store/vehicleStore';
 import useNavigationStore from './store/navigationStore';
+import hamburgerAnimation from './assets/hamburger-menu-animation.json';
+import logoImg from './assets/logo.png';
+
+// Iconos
+import {
+  IoCarOutline,
+  IoPersonOutline,
+  IoCalculatorOutline,
+  IoDocumentTextOutline,
+  IoCalendarOutline,
+  IoPeopleOutline,
+  IoFlashOutline
+} from 'react-icons/io5';
 
 // Componentes de páginas
 import VehicleForm from './pages/VehicleForm';
@@ -20,29 +33,13 @@ import CreateAccount from './pages/CreateAccount';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 
 // Navegación
-import AppNavigation from './components/navigation/AppNavigation';
+import ModernSidebar from './components/navigation/ModernSidebar';
 import { useNavigate } from 'react-router-dom';
 
 // Animaciones
 import { motion, AnimatePresence } from 'framer-motion';
 import Lottie from 'lottie-react';
 import logoutAnimation from './assets/logout-animation.json';
-import hamburgerAnimation from './assets/hamburger-menu-animation.json';
-import logoImg from './assets/logo.png';
-import logoImgDark from './assets/logo-dark.png';
-
-// Iconos para el sidebar
-import { 
-  IoHomeOutline, 
-  IoCarOutline,
-  IoPersonOutline,
-  IoCardOutline,
-  IoCalculatorOutline,
-  IoDocumentTextOutline,
-  IoCalendarOutline,
-  IoPeopleOutline,
-  IoFlashOutline
-} from 'react-icons/io5';
 
 // Componente principal
 const MainApp = () => {
@@ -52,18 +49,31 @@ const MainApp = () => {
   // Obtener estado y funciones de autenticación
   const { user, logout } = React.useContext(AuthContext);
   
-  // Estado del menú móvil desde navigationStore
-  const { mobileMenu, toggleMobileMenu, setMobileMenuClosed } = useNavigationStore();
-  
-  // Estado para controlar si el sidebar está expandido o contraído (inicia colapsado)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  // Estado para controlar el modo de auto-expansión del sidebar
-  const [sidebarHovered, setSidebarHovered] = useState(false);
-  
-  // Referencia para la animación del botón hamburguesa
-  const lottieRef = useRef();
   // Estado para mostrar el preloader de cierre de sesión
   const [showLogoutAnimation, setShowLogoutAnimation] = useState(false);
+  
+  // Estado para el sidebar y menú móvil
+  const { mobileMenu, toggleMobileMenu, setMobileMenuClosed } = useNavigationStore();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(window.innerWidth < 1024);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
+  
+  // Referencia para la animación del hamburger
+  const lottieRef = useRef();
+  
+  // Manejar el clic en el botón hamburguesa
+  const handleHamburgerClick = () => {
+    toggleMobileMenu();
+    
+    if (lottieRef.current) {
+      if (!mobileMenu.isOpen) {
+        lottieRef.current.setDirection(1);
+        lottieRef.current.playSegments([30, 60], true);
+      } else {
+        lottieRef.current.setDirection(-1);
+        lottieRef.current.playSegments([60, 30], true);
+      }
+    }
+  };
   
   // Manejar cerrar sesión con animación mejorada
   const handleLogout = () => {
@@ -78,22 +88,6 @@ const MainApp = () => {
         setShowLogoutAnimation(false);
       }, 500);
     }, 2000);
-  };
-
-  // Manejar clic en el botón hamburguesa
-  const handleHamburgerClick = () => {
-    toggleMobileMenu();
-    
-    // Controlar la animación del botón hamburguesa
-    if (lottieRef.current) {
-      if (!mobileMenu.isOpen) {
-        lottieRef.current.setDirection(1);
-        lottieRef.current.playSegments([30, 60], true);
-      } else {
-        lottieRef.current.setDirection(-1);
-        lottieRef.current.playSegments([60, 30], true);
-      }
-    }
   };
 
   return (
@@ -145,7 +139,7 @@ const MainApp = () => {
         )}
       </AnimatePresence>
 
-      {/* Header */}x|
+      {/* Header */}
       <header className="uber-header relative z-10">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">

@@ -19,7 +19,6 @@ const DB_PASSWORD = process.env.DB_PASSWORD || '';
 const DB_HOST = process.env.DB_HOST || 'localhost';
 const DB_PORT = process.env.DB_PORT || 5432;
 const DB_NAME = process.env.DB_NAME || 'cliqueatools';
-const DB_SCHEMA = process.env.DB_SCHEMA || 'cliquea';
 
 console.log('Iniciando la creación de la base de datos...');
 
@@ -54,12 +53,7 @@ const createDatabaseCmd = DB_PASSWORD
   ? `PGPASSWORD="${DB_PASSWORD}" psql -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} -d postgres -c "CREATE DATABASE ${DB_NAME}"`
   : `psql -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} -d postgres -c "CREATE DATABASE ${DB_NAME}"`;
 
-// Paso 3: Crear el schema
-const createSchemaCmd = DB_PASSWORD
-  ? `PGPASSWORD="${DB_PASSWORD}" psql -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -c "CREATE SCHEMA IF NOT EXISTS ${DB_SCHEMA}"`
-  : `psql -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -c "CREATE SCHEMA IF NOT EXISTS ${DB_SCHEMA}"`;
-
-// Paso 4: Ejecutar el resto del script SQL (sin la creación de la base de datos)
+// Paso 3: Ejecutar el script SQL que contiene la creación de todos los schemas necesarios
 const sqlScriptPath = path.resolve(__dirname, '../config/init.sql');
 const runScriptCmd = DB_PASSWORD
   ? `PGPASSWORD="${DB_PASSWORD}" psql -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -f "${sqlScriptPath}"`
@@ -77,12 +71,11 @@ runCommand(checkDatabaseCmd, "verificar si la base de datos existe")
       return runCommand(createDatabaseCmd, `crear la base de datos '${DB_NAME}'`);
     }
   })
-  .then(() => runCommand(createSchemaCmd, `crear el schema '${DB_SCHEMA}'`))
-  .then(() => runCommand(runScriptCmd, "ejecutar script de inicialización de tablas"))
+  .then(() => runCommand(runScriptCmd, "ejecutar script de inicialización de schemas y tablas"))
   .then(() => {
     console.log('\n===========================================');
     console.log(`✅ Base de datos '${DB_NAME}' inicializada correctamente.`);
-    console.log(`✅ Schema '${DB_SCHEMA}' creado.`);
+    console.log(`✅ Schemas definidos en init.sql creados.`);
     console.log(`✅ Tablas y datos iniciales creados.`);
     console.log('===========================================');
     console.log('\nPuedes iniciar la aplicación ahora con:');
@@ -96,7 +89,7 @@ runCommand(checkDatabaseCmd, "verificar si la base de datos existe")
     console.log('1. Abre una terminal y ejecuta: psql -d postgres');
     console.log(`2. Crea la base de datos: CREATE DATABASE ${DB_NAME};`);
     console.log(`3. Conéctate a la base de datos: \\c ${DB_NAME}`);
-    console.log(`4. Crea el schema: CREATE SCHEMA IF NOT EXISTS ${DB_SCHEMA};`);
+    console.log(`4. Ejecuta el script init.sql para crear los schemas y tablas necesarios`);
     console.log('5. Sal de psql: \\q');
     console.log('6. Inicia la aplicación con: npm run dev');
   });

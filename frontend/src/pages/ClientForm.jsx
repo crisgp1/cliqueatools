@@ -1,6 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useContext, useEffect } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import ClientList from '../components/client/ClientList';
+import ClientService from '../services/ClientService';
 
-const ClientForm = ({ initialClient, onClientChange }) => {
+const ClientFormPage = () => {
+  // Contexto de autenticación para obtener el token
+  const { token } = useContext(AuthContext);
+  
+  // Estados para la gestión de clientes
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Estado para el formulario
   const [client, setClient] = useState({
     nombre: '',
     apellidos: '',
@@ -13,16 +25,36 @@ const ClientForm = ({ initialClient, onClientChange }) => {
   });
   
   const [errors, setErrors] = useState({});
-
-  // Sincronizar con initialClient si se proporciona
+  
+  // Cargar clientes al montar el componente
   useEffect(() => {
-    if (initialClient) {
-      setClient(initialClient);
+    if (token) {
+      loadClients();
     }
-  }, [initialClient]);
-
+  }, [token]);
+  
+  // Cargar clientes desde la API
+  const loadClients = async () => {
+    setLoading(true);
+    try {
+      const response = await ClientService.getClients(token);
+      if (response.success) {
+        setClients(response.data);
+      } else {
+        setError(response.message || 'Error al cargar los clientes');
+        alert('Error al cargar los clientes: ' + (response.message || 'Error desconocido'));
+      }
+    } catch (err) {
+      setError(err.message || 'Error al cargar los clientes');
+      alert('Error al cargar los clientes: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // Validar correo electrónico
   const validateEmail = (email) => {
+    if (!email) return true; // Permitir vacío
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   };
@@ -60,12 +92,6 @@ const ClientForm = ({ initialClient, onClientChange }) => {
     
     // Actualizar valor del campo
     setClient({
-      ...client,
-      [name]: value
-    });
-    
-    // Actualizar en el componente padre
-    onClientChange({
       ...client,
       [name]: value
     });
@@ -107,27 +133,113 @@ const ClientForm = ({ initialClient, onClientChange }) => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  // Manejar submit del formulario
-  const handleSubmit = (e) => {
+  
+  // Agregar nuevo cliente
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      console.log('Cliente válido:', client);
-      // La actualización ya se está enviando en handleChange
+    if (!validateForm()) {
+      return;
     }
+    
+    setLoading(true);
+    try {
+      // Formatear datos para la API
+      const clientData = {
+        nombre: client.nombre,
+        apellidos: client.apellidos,
+        email: client.email || null,
+        telefono: client.telefono || null,
+        rfc: client.rfc || null,
+        direccion: client.direccion || null,
+        ciudad: client.ciudad || null,
+        codigo_postal: client.codigoPostal || null
+      };
+      
+      const response = await ClientService.createClient(token, clientData);
+      
+      if (response.success) {
+        // Limpiar formulario
+        setClient({
+          nombre: '',
+          apellidos: '',
+          email: '',
+          telefono: '',
+          rfc: '',
+          direccion: '',
+          ciudad: '',
+          codigoPostal: ''
+        });
+        
+        // Mostrar mensaje de éxito
+        alert('Cliente guardado correctamente');
+        
+        // Recargar lista de clientes
+        loadClients();
+      } else {
+        setError(response.message || 'Error al crear el cliente');
+        alert('Error al crear el cliente: ' + (response.message || 'Error desconocido'));
+      }
+    } catch (err) {
+      setError(err.message || 'Error al crear el cliente');
+      alert('Error al crear el cliente: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Editar cliente
+  const handleEditClient = (client) => {
+    // Implementar edición de cliente
+    console.log('Editar cliente:', client);
+  };
+  
+  // Eliminar cliente
+  const handleDeleteClient = async (id) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
+      setLoading(true);
+      try {
+        const response = await ClientService.deleteClient(token, id);
+        
+        if (response.success) {
+          // Recargar lista de clientes
+          loadClients();
+        } else {
+          setError(response.message || 'Error al eliminar el cliente');
+          alert('Error al eliminar el cliente: ' + (response.message || 'Error desconocido'));
+        }
+      } catch (err) {
+        setError(err.message || 'Error al eliminar el cliente');
+        alert('Error al eliminar el cliente: ' + (err.message || 'Error desconocido'));
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+  
+  // Ver detalles del cliente
+  const handleViewClient = (client) => {
+    // Implementar vista de detalles del cliente
+    console.log('Ver cliente:', client);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="govuk-form-section">
-        <h3 className="govuk-form-section-title">Información personal</h3>
+    <div className="space-y-8">
+      {/* Formulario para agregar clientes */}
+      <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 text-white">
+          <h2 className="text-xl font-bold">Nuevo Cliente</h2>
+          <p className="text-blue-100 mt-1 text-sm">
+            Completa la información para registrar un nuevo cliente
+          </p>
+        </div>
         
-        <div className="govuk-grid-row">
-          <div className="govuk-grid-column-one-half">
-            <div className="govuk-form-group">
-              <label htmlFor="nombre" className="govuk-label">
-                Nombre(s) <span className="text-royal-red">*</span>
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Nombre (campo obligatorio) */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="nombre">
+                Nombre <span className="text-red-500 ml-1">*</span>
               </label>
               <input
                 type="text"
@@ -135,18 +247,20 @@ const ClientForm = ({ initialClient, onClientChange }) => {
                 name="nombre"
                 value={client.nombre}
                 onChange={handleChange}
-                className={`govuk-input ${errors.nombre ? 'govuk-input-error' : ''}`}
+                className={`block w-full rounded-lg border ${
+                  errors.nombre ? 'border-red-300 text-red-600 bg-red-50' : 'border-gray-300 bg-white'
+                } py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors duration-200`}
+                required
               />
               {errors.nombre && (
-                <p className="govuk-error-message">{errors.nombre}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.nombre}</p>
               )}
             </div>
-          </div>
-          
-          <div className="govuk-grid-column-one-half">
-            <div className="govuk-form-group">
-              <label htmlFor="apellidos" className="govuk-label">
-                Apellidos <span className="text-royal-red">*</span>
+            
+            {/* Apellidos (campo obligatorio) */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="apellidos">
+                Apellidos <span className="text-red-500 ml-1">*</span>
               </label>
               <input
                 type="text"
@@ -154,17 +268,19 @@ const ClientForm = ({ initialClient, onClientChange }) => {
                 name="apellidos"
                 value={client.apellidos}
                 onChange={handleChange}
-                className={`govuk-input ${errors.apellidos ? 'govuk-input-error' : ''}`}
+                className={`block w-full rounded-lg border ${
+                  errors.apellidos ? 'border-red-300 text-red-600 bg-red-50' : 'border-gray-300 bg-white'
+                } py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors duration-200`}
+                required
               />
               {errors.apellidos && (
-                <p className="govuk-error-message">{errors.apellidos}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.apellidos}</p>
               )}
             </div>
-          </div>
-          
-          <div className="govuk-grid-column-one-half">
-            <div className="govuk-form-group">
-              <label htmlFor="email" className="govuk-label">
+            
+            {/* Email */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
                 Correo electrónico
               </label>
               <input
@@ -173,17 +289,19 @@ const ClientForm = ({ initialClient, onClientChange }) => {
                 name="email"
                 value={client.email}
                 onChange={handleChange}
-                className={`govuk-input ${errors.email ? 'govuk-input-error' : ''}`}
+                className={`block w-full rounded-lg border ${
+                  errors.email ? 'border-red-300 text-red-600 bg-red-50' : 'border-gray-300 bg-white'
+                } py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors duration-200`}
+                placeholder="ejemplo@dominio.com"
               />
               {errors.email && (
-                <p className="govuk-error-message">{errors.email}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
               )}
             </div>
-          </div>
-          
-          <div className="govuk-grid-column-one-half">
-            <div className="govuk-form-group">
-              <label htmlFor="telefono" className="govuk-label">
+            
+            {/* Teléfono */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="telefono">
                 Teléfono
               </label>
               <input
@@ -192,18 +310,19 @@ const ClientForm = ({ initialClient, onClientChange }) => {
                 name="telefono"
                 value={client.telefono}
                 onChange={handleChange}
-                className={`govuk-input ${errors.telefono ? 'govuk-input-error' : ''}`}
+                className={`block w-full rounded-lg border ${
+                  errors.telefono ? 'border-red-300 text-red-600 bg-red-50' : 'border-gray-300 bg-white'
+                } py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors duration-200`}
+                placeholder="10 dígitos"
               />
-              <span className="govuk-form-hint">Formato: 10 dígitos sin espacios</span>
               {errors.telefono && (
-                <p className="govuk-error-message">{errors.telefono}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.telefono}</p>
               )}
             </div>
-          </div>
-          
-          <div className="govuk-grid-column-one-half">
-            <div className="govuk-form-group">
-              <label htmlFor="rfc" className="govuk-label">
+            
+            {/* RFC */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="rfc">
                 RFC
               </label>
               <input
@@ -212,23 +331,19 @@ const ClientForm = ({ initialClient, onClientChange }) => {
                 name="rfc"
                 value={client.rfc}
                 onChange={handleChange}
-                className={`govuk-input ${errors.rfc ? 'govuk-input-error' : ''}`}
+                className={`block w-full rounded-lg border ${
+                  errors.rfc ? 'border-red-300 text-red-600 bg-red-50' : 'border-gray-300 bg-white'
+                } py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors duration-200`}
+                placeholder="Ej: XAXX010101000"
               />
               {errors.rfc && (
-                <p className="govuk-error-message">{errors.rfc}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.rfc}</p>
               )}
             </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="govuk-form-section">
-        <h3 className="govuk-form-section-title">Dirección</h3>
-        
-        <div className="govuk-grid-row">
-          <div className="govuk-grid-column-full">
-            <div className="govuk-form-group">
-              <label htmlFor="direccion" className="govuk-label">
+            
+            {/* Dirección */}
+            <div className="relative md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="direccion">
                 Dirección
               </label>
               <input
@@ -237,15 +352,14 @@ const ClientForm = ({ initialClient, onClientChange }) => {
                 name="direccion"
                 value={client.direccion}
                 onChange={handleChange}
-                className="govuk-input"
+                className="block w-full rounded-lg border border-gray-300 bg-white py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all duration-200"
                 placeholder="Calle, número, colonia"
               />
             </div>
-          </div>
-          
-          <div className="govuk-grid-column-one-half">
-            <div className="govuk-form-group">
-              <label htmlFor="ciudad" className="govuk-label">
+            
+            {/* Ciudad */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="ciudad">
                 Ciudad
               </label>
               <input
@@ -254,15 +368,14 @@ const ClientForm = ({ initialClient, onClientChange }) => {
                 name="ciudad"
                 value={client.ciudad}
                 onChange={handleChange}
-                className="govuk-input"
+                className="block w-full rounded-lg border border-gray-300 bg-white py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all duration-200"
                 placeholder="Ej: Ciudad de México"
               />
             </div>
-          </div>
-          
-          <div className="govuk-grid-column-one-half">
-            <div className="govuk-form-group">
-              <label htmlFor="codigoPostal" className="govuk-label">
+            
+            {/* Código Postal */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="codigoPostal">
                 Código Postal
               </label>
               <input
@@ -271,27 +384,39 @@ const ClientForm = ({ initialClient, onClientChange }) => {
                 name="codigoPostal"
                 value={client.codigoPostal}
                 onChange={handleChange}
-                className={`govuk-input ${errors.codigoPostal ? 'govuk-input-error' : ''}`}
+                className={`block w-full rounded-lg border ${
+                  errors.codigoPostal ? 'border-red-300 text-red-600 bg-red-50' : 'border-gray-300 bg-white'
+                } py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors duration-200`}
                 placeholder="5 dígitos"
               />
               {errors.codigoPostal && (
-                <p className="govuk-error-message">{errors.codigoPostal}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.codigoPostal}</p>
               )}
             </div>
           </div>
-        </div>
+          
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center"
+            >
+              {loading ? 'Guardando...' : 'Guardar Cliente'}
+            </button>
+          </div>
+        </form>
       </div>
       
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          className="govuk-button"
-        >
-          Guardar información
-        </button>
-      </div>
-    </form>
+      {/* Lista de clientes */}
+      <ClientList 
+        clients={clients} 
+        loading={loading}
+        onEdit={handleEditClient}
+        onDelete={handleDeleteClient}
+        onView={handleViewClient}
+      />
+    </div>
   );
 };
 
-export default ClientForm;
+export default ClientFormPage;

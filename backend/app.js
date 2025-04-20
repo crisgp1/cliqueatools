@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3000; // Valor por defecto en caso de que PORT 
 // Middleware
 // Configuración de CORS para permitir solicitudes desde el frontend
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5174', // Permite configurarlo por variable de entorno
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Permite configurarlo por variable de entorno
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

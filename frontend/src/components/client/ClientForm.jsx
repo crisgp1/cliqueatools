@@ -27,7 +27,7 @@ import {
  * @param {Function} props.onCancel - Función a llamar al cancelar
  * @returns {JSX.Element}
  */
-const ClientForm = ({ initialValues = {}, isEditing = false, onSubmit, onCancel }) => {
+const ClientForm = ({ initialValues = {}, isEditing = false, onSubmit, onCancel, onClientChange }) => {
   // Estado para el formulario
   const [client, setClient] = useState({
     nombre: '',
@@ -191,10 +191,12 @@ const ClientForm = ({ initialValues = {}, isEditing = false, onSubmit, onCancel 
       const { name, value } = e.target;
       
       // Actualizar valor del campo
-      setClient(prev => ({
-        ...prev,
+      const updatedClient = {
+        ...client,
         [name]: value
-      }));
+      };
+      
+      setClient(updatedClient);
       
       // Marcar el campo como tocado
       if (!touched[name]) {
@@ -206,6 +208,11 @@ const ClientForm = ({ initialValues = {}, isEditing = false, onSubmit, onCancel 
       
       // Validar el campo
       validateField(name, value);
+      
+      // Notificar al componente padre si existe la función onClientChange
+      if (typeof onClientChange === 'function') {
+        onClientChange(updatedClient);
+      }
     } catch (error) {
       console.error("Error al procesar cambio de campo:", error);
     }
