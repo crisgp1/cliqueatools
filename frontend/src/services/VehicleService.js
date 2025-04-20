@@ -76,6 +76,7 @@ export const createVehicle = async (token, vehicleData, handleApiResponse = null
       color_exterior: vehicleData.color || '',
       tipo_vehiculo: vehicleData.tipo || 'automovil',
       num_serie: vehicleData.numero_serie || '',
+      vin: vehicleData.vin || null, // Añadimos el campo vin con valor null para evitar errores de validación
       transmision: vehicleData.transmision || 'manual', // Valor por defecto
       combustible: vehicleData.combustible || 'gasolina', // Valor por defecto
       odometro: vehicleData.odometro || 0,
@@ -135,6 +136,7 @@ export const updateVehicle = async (token, vehicleData, handleApiResponse = null
       color_exterior: vehicleData.color || '',
       tipo_vehiculo: vehicleData.tipo || 'automovil',
       num_serie: vehicleData.numero_serie || '',
+      vin: vehicleData.vin || null, // Añadimos el campo vin con valor null para evitar errores de validación
       transmision: vehicleData.transmision || 'manual', // Valor por defecto
       combustible: vehicleData.combustible || 'gasolina', // Valor por defecto
       odometro: vehicleData.odometro || 0,

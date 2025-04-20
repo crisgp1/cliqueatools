@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3000; // Valor por defecto en caso de que PORT 
 // Middleware
 // Configuración de CORS para permitir solicitudes desde el frontend
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Permite configurarlo por variable de entorno
+  origin: process.env.FRONTEND_URL || 'http://localhost:5174', // Permite configurarlo por variable de entorno
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -84,23 +84,13 @@ const initServer = async () => {
       process.exit(1);
     }
     
-    // 1. Asegurarse de que todos los esquemas necesarios existen
-    const schemas = [
-      'autenticacion', 'clientes', 'inventario', 'bancos', 'financiamiento',
-      'ventas', 'distribuidores', 'servicio', 'seguros', 'cumplimiento',
-      'marketing', 'contabilidad', 'documentos', 'mantenimiento', 'subastas',
-      'consignaciones', 'importaciones', 'logistica', 'avaluos', 'proveedores',
-      'recursos_humanos'
-    ];
-    
-    for (const schema of schemas) {
-      try {
-        await sequelize.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
-        console.log(`✅ Esquema ${schema} verificado`);
-      } catch (schemaError) {
-        console.error(`Error al verificar el esquema ${schema}:`, schemaError);
-        // Continuar de todos modos, ya que el schema podría existir
-      }
+    // 1. Asegurarse de que el esquema inventario existe
+    try {
+      await sequelize.query('CREATE SCHEMA IF NOT EXISTS inventario');
+      console.log('✅ Esquema inventario verificado');
+    } catch (schemaError) {
+      console.error('Error al verificar el esquema inventario:', schemaError);
+      // Continuar de todos modos, ya que el schema podría existir
     }
 
     // 2. Sincronización de modelos - Modo seguro

@@ -68,7 +68,7 @@ const vehiculoController = {
         observaciones: observaciones || '',
         disponible: disponible !== undefined ? disponible : true,
         destacado: destacado || false,
-        vin: vin || '',
+        vin: vin || null,
         num_serie: num_serie || '',
         version: version || '',
         tipo_vehiculo: tipo_vehiculo || 'automovil'
@@ -250,7 +250,7 @@ const vehiculoController = {
         observaciones,
         disponible: disponible !== undefined ? disponible : vehiculo.disponible,
         destacado: destacado !== undefined ? destacado : vehiculo.destacado,
-        vin,
+        vin: vin || null,
         num_serie,
         version,
         tipo_vehiculo: tipo_vehiculo || vehiculo.tipo_vehiculo

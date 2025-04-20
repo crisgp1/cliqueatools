@@ -115,6 +115,7 @@ export const createEmptyVehicle = () => {
     tipo: 'automovil',  // Valor predeterminado para tipo_vehiculo
     numero_motor: '',
     numero_serie: '',
+    vin: null,  // Añadimos el campo vin con valor null para evitar errores de validación
     placas: '',
     numero_circulacion: '',
     numero_factura: '',
