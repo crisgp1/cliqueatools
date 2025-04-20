@@ -41,7 +41,10 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Modal content clicked');
+            }}
           >
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-800">{title}</h2>
@@ -52,7 +55,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
                 <IoCloseOutline className="w-6 h-6 text-gray-600" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[80vh]">
+            <div className="p-6 overflow-y-auto max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
               {children}
             </div>
           </motion.div>

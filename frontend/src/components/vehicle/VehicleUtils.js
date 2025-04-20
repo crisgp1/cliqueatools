@@ -109,7 +109,7 @@ export const createEmptyVehicle = () => {
     marca: '',
     modelo: '',
     año: getCurrentYear(),
-    valor: '',
+    valor: 0,
     descripcion: '',
     color: '',
     tipo: 'automovil',  // Valor predeterminado para tipo_vehiculo

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { IoCheckmarkCircleOutline } from 'react-icons/io5';
 import { formatCurrency, validateVehicle, getCurrentYear } from './VehicleUtils';
+import VehicleImageUpload from './VehicleImageUpload';
 
 /**
  * Componente que muestra un formulario para editar un vehículo existente
@@ -413,6 +414,13 @@ const VehicleFormEdit = ({ vehicle, onSubmit, onCancel, loading = false }) => {
             />
           </motion.div>
         </div>
+
+        {/* Componente de carga de imágenes - Solo visible en modo edición cuando hay un ID de vehículo */}
+        {editingVehicle.id && (
+          <motion.div variants={itemAnimation} className="mt-6">
+            <VehicleImageUpload vehiculoId={editingVehicle.id} readOnly={false} />
+          </motion.div>
+        )}
         
         <div className="flex justify-between mt-4">
           <motion.button

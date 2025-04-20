@@ -1,18 +1,39 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  IoTrashOutline, 
-  IoCarSportOutline, 
-  IoCalculatorOutline, 
-  IoCheckmarkDoneOutline, 
+import {
+  IoTrashOutline,
+  IoCarSportOutline,
+  IoCalculatorOutline,
+  IoCheckmarkDoneOutline,
   IoAlertCircleOutline
 } from 'react-icons/io5';
 import Modal from '../../pages/Modal';
+import VehicleFormModal from './VehicleFormModal';
 
 /**
  * Componente que gestiona los diferentes modales relacionados con vehículos
  */
 export const VehicleModals = {
+  /**
+   * Modal de formulario para agregar un vehículo
+   *
+   * @param {Object} props - Propiedades del componente
+   * @param {boolean} props.isOpen - Indica si el modal está abierto
+   * @param {Function} props.onClose - Función para cerrar el modal
+   * @param {Function} props.onSubmit - Función a llamar cuando se envía el formulario con éxito
+   * @param {boolean} props.loading - Indica si hay una operación en curso
+   * @returns {JSX.Element}
+   */
+  FormModal: ({ isOpen, onClose, onSubmit, loading }) => {
+    return (
+      <VehicleFormModal
+        isOpen={isOpen}
+        onClose={onClose}
+        onSubmit={onSubmit}
+        loading={loading}
+      />
+    );
+  },
   /**
    * Modal de éxito después de agregar un vehículo
    * 

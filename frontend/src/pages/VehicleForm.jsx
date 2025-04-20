@@ -26,6 +26,7 @@ const VehicleForm = () => {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [deleteVehicleId, setDeleteVehicleId] = useState(null);
   const [editingVehicle, setEditingVehicle] = useState(null);
   
@@ -183,8 +184,25 @@ const VehicleForm = () => {
         </motion.div>
       )}
 
-      {/* Formulario para agregar vehículos */}
-      <VehicleFormAdd 
+      {/* Botón para abrir el modal de agregar vehículo */}
+      <div className="flex justify-end mb-4">
+        <motion.button
+          onClick={() => setShowAddModal(true)}
+          className="govuk-button bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded flex items-center"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          Agregar vehículo
+        </motion.button>
+      </div>
+
+      {/* Modal para agregar vehículos */}
+      <VehicleModals.FormModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
         onSubmit={handleAddVehicle}
         loading={loading}
       />
