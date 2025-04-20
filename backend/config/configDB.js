@@ -2,7 +2,7 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const { Sequelize } = require('sequelize');
 
-// Configuración de la base de datos con el schema inventario
+// Configuración de la base de datos con soporte para múltiples schemas
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -22,7 +22,7 @@ const sequelize = new Sequelize(
       timestamps: true, // Crea campos createdAt y updatedAt
       underscored: true, // Usa snake_case para nombres de columnas
       freezeTableName: false, // Permite que Sequelize pluralice nombres de tablas
-      schema: 'inventario' // Establece el schema a inventario donde están tus tablas
+      // No definimos un schema por defecto para permitir que cada modelo especifique su propio schema
     },
     pool: {
       max: 5,

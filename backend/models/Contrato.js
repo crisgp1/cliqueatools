@@ -1,18 +1,18 @@
 module.exports = (sequelize, DataTypes) => {
   const Contrato = sequelize.define('Contrato', {
-    contrato_id: {
-      type: DataTypes.INTEGER,
+    id_contrato: {
+      type: DataTypes.UUID,
       primaryKey: true,
-      autoIncrement: true,
-      field: 'contrato_id'
+      defaultValue: DataTypes.UUIDV4,
+      field: 'id_contrato'
     },
-    cliente_id: {
-      type: DataTypes.INTEGER,
+    id_cliente: {
+      type: DataTypes.UUID,
       allowNull: false,
-      field: 'cliente_id',
+      field: 'id_cliente',
       references: {
-        model: 'clientes',
-        key: 'cliente_id'
+        model: 'datos',
+        key: 'id_cliente'
       }
     },
     ciudad: {
@@ -48,21 +48,23 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     tableName: 'contratos',
     schema: 'ventas',
-    timestamps: false // La tabla contratos no tiene timestamps según el esquema
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
   });
 
   Contrato.associate = function(models) {
     // Un contrato pertenece a un cliente
     Contrato.belongsTo(models.Cliente, {
-      foreignKey: 'cliente_id',
+      foreignKey: 'id_cliente',
       as: 'cliente'
     });
 
     // Un contrato puede tener muchos vehículos (relación muchos a muchos)
     Contrato.belongsToMany(models.Vehiculo, {
       through: models.ContratoVehiculo,
-      foreignKey: 'contrato_id',
-      otherKey: 'vehiculo_id',
+      foreignKey: 'id_contrato',
+      otherKey: 'id_vehiculo',
       as: 'vehiculos'
     });
   };

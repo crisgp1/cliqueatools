@@ -1,21 +1,21 @@
 module.exports = (sequelize, DataTypes) => {
   const ContratoVehiculo = sequelize.define('ContratoVehiculo', {
     // No necesitamos un ID adicional ya que usamos una clave primaria compuesta
-    contrato_id: {
-      type: DataTypes.INTEGER,
+    id_contrato: {
+      type: DataTypes.UUID,
       primaryKey: true,
       allowNull: false,
-      field: 'id_contrato', // Cambiado para coincidir con el esquema en init.sql
+      field: 'id_contrato',
       references: {
         model: 'contratos',
         key: 'id_contrato'
       }
     },
-    vehiculo_id: {
-      type: DataTypes.INTEGER,
+    id_vehiculo: {
+      type: DataTypes.UUID,
       primaryKey: true,
       allowNull: false,
-      field: 'id_vehiculo', // Cambiado para coincidir con el esquema en init.sql
+      field: 'id_vehiculo',
       references: {
         model: 'vehiculos',
         key: 'id_vehiculo'

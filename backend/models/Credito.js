@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       field: 'id_cliente',
       references: {
-        model: 'clientes.datos',
+        model: 'datos',
         key: 'id_cliente'
       }
     },
@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       field: 'id_vehiculo',
       references: {
-        model: 'inventario.vehiculos',
+        model: 'vehiculos',
         key: 'id_vehiculo'
       }
     },
@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       field: 'id_banco',
       references: {
-        model: 'bancos.instituciones',
+        model: 'instituciones',
         key: 'id_banco'
       }
     },
@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       field: 'id_plan',
       references: {
-        model: 'bancos.planes_financiamiento',
+        model: 'planes_financiamiento',
         key: 'id_plan'
       }
     },
@@ -216,7 +216,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       field: 'creado_por',
       references: {
-        model: 'autenticacion.usuarios',
+        model: 'usuarios',
         key: 'id_usuario'
       }
     },
@@ -225,7 +225,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       field: 'actualizado_por',
       references: {
-        model: 'autenticacion.usuarios',
+        model: 'usuarios',
         key: 'id_usuario'
       }
     }
