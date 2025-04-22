@@ -87,6 +87,11 @@ export const createVehicle = async (token, vehicleData, handleApiResponse = null
       disponible: vehicleData.disponible !== undefined ? vehicleData.disponible : true
     };
     
+    // Si hay imágenes temporales, incluirlas en la solicitud
+    if (vehicleData.tempImages && vehicleData.tempImages.length > 0) {
+      dataToSend.tempImages = vehicleData.tempImages;
+    }
+    
     const response = await fetchWithTokenCheck(`${import.meta.env.VITE_API_URL}/vehiculos`, {
       method: 'POST',
       headers: createAuthHeaders(token),

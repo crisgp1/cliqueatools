@@ -5,11 +5,11 @@ const vehiculoController = {
   // Crear un nuevo vehículo
   crear: async (req, res) => {
     try {
-      const { 
-        marca, 
-        modelo, 
-        anio, 
-        valor, 
+      const {
+        marca,
+        modelo,
+        anio,
+        valor,
         descripcion,
         color_exterior,
         color_interior,
@@ -34,7 +34,8 @@ const vehiculoController = {
         vin,
         num_serie,
         version,
-        tipo_vehiculo
+        tipo_vehiculo,
+        tempImages // Nuevo campo para imágenes temporales
       } = req.body;
 
       // Validaciones básicas
@@ -75,11 +76,60 @@ const vehiculoController = {
       });
 
       // Crear respuesta compatible con frontend
-      // Crear respuesta compatible con frontend
       const responseData = {
         vehiculo_id: nuevoVehiculo.id_vehiculo,
         ...nuevoVehiculo.toJSON()
       };
+
+      // Si hay imágenes temporales, asociarlas al vehículo
+      if (tempImages && tempImages.length > 0) {
+        try {
+          const { sequelize } = require('../models');
+          
+          // Usar una transacción para asegurar la integridad de los datos
+          const transaction = await sequelize.transaction();
+          
+          try {
+            // Asociar cada imagen temporal al vehículo
+            for (const img of tempImages) {
+              // Usar id o id_media, dependiendo de cuál esté disponible
+              const idMedia = img.id_media || img.id;
+              
+              if (!idMedia) {
+                console.error('Error: imagen sin ID válido', img);
+                continue;
+              }
+              
+              await sequelize.query(`
+                INSERT INTO archivos.vehiculo_medias (
+                  id_vehiculo, id_media, es_principal, orden, creado_por
+                ) VALUES (?, ?, ?, ?, ?)
+              `, {
+                replacements: [
+                  nuevoVehiculo.id_vehiculo,
+                  idMedia,
+                  img.es_principal,
+                  img.orden,
+                  req.usuario?.id_usuario || 1
+                ],
+                transaction
+              });
+            }
+            
+            // Actualizar la carpeta de las imágenes en Cloudinary
+            // Esto se podría hacer en un proceso en segundo plano para no bloquear la respuesta
+            
+            await transaction.commit();
+            console.log(`Asociadas ${tempImages.length} imágenes al vehículo ${nuevoVehiculo.id_vehiculo}`);
+          } catch (imgError) {
+            await transaction.rollback();
+            console.error('Error al asociar imágenes temporales:', imgError);
+            // No fallamos la creación del vehículo si hay error en las imágenes
+          }
+        } catch (txError) {
+          console.error('Error en transacción de imágenes:', txError);
+        }
+      }
 
       res.status(201).json({
         success: true,

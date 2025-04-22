@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { IoAddOutline, IoCarSportOutline } from 'react-icons/io5';
+import { IoAddOutline, IoCarSportOutline, IoCheckmarkCircleOutline } from 'react-icons/io5';
 import { formatCurrency, createEmptyVehicle, validateVehicle, getCurrentYear } from './VehicleUtils';
 import Modal from '../../pages/Modal';
+import VehicleImageUploadTemp from './VehicleImageUploadTemp';
 
 /**
  * Componente que muestra un formulario para agregar un nuevo vehículo en un modal
@@ -20,12 +21,16 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, loading = false }) => {
   
   // Estado para errores de validación
   const [validationErrors, setValidationErrors] = useState({});
+  
+  // Estado para almacenar las imágenes temporales
+  const [tempImages, setTempImages] = useState([]);
 
   // Reiniciar el formulario cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
       setNewVehicle(createEmptyVehicle());
       setValidationErrors({});
+      setTempImages([]);
     }
   }, [isOpen]);
 
@@ -137,13 +142,27 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, loading = false }) => {
     }
     
     try {
-      // Llamar a la función de envío pasada por props
-      const success = await onSubmit(newVehicle);
+      // Preparar los datos del vehículo con las imágenes temporales
+      const vehicleData = {
+        ...newVehicle,
+        tempImages: tempImages.map(img => ({
+          id: img.id,
+          id_media: img.id_media,
+          es_principal: img.es_principal,
+          orden: img.orden
+        }))
+      };
       
-      // Si fue exitoso, limpiar el formulario y cerrar el modal
-      if (success) {
+      console.log('Enviando datos con imágenes:', vehicleData);
+      
+      // Llamar a la función de envío pasada por props
+      const savedVehicleData = await onSubmit(vehicleData);
+      
+      // Si fue exitoso, cerrar el modal
+      if (savedVehicleData) {
         setNewVehicle(createEmptyVehicle());
         setValidationErrors({});
+        setTempImages([]);
         onClose();
       }
     } catch (error) {
@@ -173,6 +192,11 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, loading = false }) => {
       y: 0,
       transition: { type: "spring", stiffness: 400, damping: 20 }
     }
+  };
+
+  // Manejar cambios en las imágenes temporales
+  const handleImagesChange = (images) => {
+    setTempImages(images);
   };
 
   return (
@@ -375,6 +399,9 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, loading = false }) => {
             </motion.div>
           </div>
           
+          {/* Componente de carga de imágenes temporal */}
+          <VehicleImageUploadTemp onImagesChange={handleImagesChange} />
+          
           <div className="flex justify-end mt-4 space-x-3">
             <button
               type="button"
@@ -384,6 +411,7 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, loading = false }) => {
             >
               Cancelar
             </button>
+            
             <motion.button
               type="submit"
               className="govuk-button bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded flex items-center"

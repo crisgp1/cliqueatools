@@ -92,7 +92,7 @@ const VehicleForm = () => {
         setShowInfoModal(true);
       }
       
-      return !!newVehicle; // Devolver true si se creó correctamente
+      return newVehicle; // Devolver el vehículo creado con su ID
     } catch (err) {
       setShowErrorModal(true);
       return false;

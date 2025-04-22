@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const fs = require('fs').promises;
+const fs = require('fs-extra');
 const path = require('path');
 const { uploadFile, deleteFile } = require('../config/cloudinary');
 const { sequelize } = require('../config/configDB');
@@ -10,7 +10,9 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Configuración de multer para almacenamiento temporal
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'tmp/uploads');
+    // Asegurar que el directorio existe antes de cada subida
+    fs.ensureDirSync(uploadDir);
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -37,16 +39,57 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB límite
 });
 
-// Asegurar que existe el directorio tmp/uploads
-(async () => {
-  try {
-    await fs.mkdir('tmp/uploads', { recursive: true });
-  } catch (error) {
-    console.error('Error al crear directorio temporal:', error);
-  }
-})();
+// Definir la ruta del directorio de uploads
+const uploadDir = path.join(__dirname, '..', 'tmp', 'uploads');
 
-// Middleware de autenticación para todas las rutas
+// Asegurar que existe el directorio tmp/uploads usando fs-extra
+try {
+  fs.ensureDirSync(uploadDir);
+  console.log('✅ Directorio de uploads verificado:', uploadDir);
+} catch (error) {
+  console.error('❌ Error al crear directorio temporal:', error);
+}
+
+// Ruta de prueba sin autenticación para diagnóstico
+router.post('/test-upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No se ha proporcionado un archivo' });
+    }
+
+    const filePath = req.file.path;
+    
+    // Opciones específicas para la carga
+    const options = {
+      folder: 'test-uploads',
+      resource_type: req.file.mimetype.startsWith('video/') ? 'video' : 'image',
+    };
+
+    // Subir a Cloudinary
+    const cloudinaryResult = await uploadFile(filePath, options);
+    
+    // Eliminar archivo temporal después de subir
+    await fs.remove(filePath);
+    console.log(`✅ Archivo temporal eliminado: ${filePath}`);
+    
+    // Responder con los datos del archivo
+    res.status(201).json({
+      message: 'Archivo subido correctamente (prueba)',
+      url: cloudinaryResult.url,
+      public_id: cloudinaryResult.public_id,
+      formato: cloudinaryResult.format,
+      tamano: cloudinaryResult.bytes
+    });
+  } catch (error) {
+    console.error('Error en test-upload:', error);
+    res.status(500).json({
+      message: 'Error al subir el archivo en prueba',
+      error: error.message
+    });
+  }
+});
+
+// Middleware de autenticación para el resto de las rutas
 router.use(authMiddleware);
 
 /**
@@ -106,7 +149,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
           cloudinaryResult.height,
           cloudinaryResult.duration || null,
           JSON.stringify(cloudinaryResult),
-          req.user.id_usuario
+          req.usuario.id_usuario
         ],
         transaction
       });
@@ -138,7 +181,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
             idMedia,
             esPrincipal,
             orden,
-            req.user.id_usuario
+            req.usuario.id_usuario
           ],
           transaction
         });

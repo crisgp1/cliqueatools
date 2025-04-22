@@ -257,7 +257,7 @@ const VehicleList = ({ vehicles = [], loading = false, onEdit, onDelete }) => {
           </AnimatePresence>
         </tbody>
         <tfoot>
-          <tr key="total-row" className="bg-gray-50 font-bold">
+          <tr key={`total-row-${filteredVehicles.length}`} className="bg-gray-50 font-bold">
             <td colSpan="2" className="px-6 py-4 text-left sm:text-right">
               Valor total ({filteredVehicles.length} vehículos):
             </td>

@@ -4,13 +4,24 @@ const { Usuario } = require('../models');
 // Middleware para verificar token JWT
 const verificarToken = async (req, res, next) => {
   try {
-    // Obtener el token del header
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    // Intentar obtener el token de diferentes fuentes
+    let token;
+    
+    // 1. Verificar en headers (Authorization: Bearer token)
+    const authHeader = req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.replace('Bearer ', '');
+    }
+    // 2. Si no está en headers, verificar en cookies
+    else if (req.cookies && req.cookies.auth_token) {
+      token = req.cookies.auth_token;
+    }
     
     if (!token) {
       return res.status(401).json({
         success: false,
-        mensaje: 'Acceso denegado. Se requiere token de autenticación'
+        mensaje: 'Acceso denegado. Se requiere token de autenticación',
+        detalles: 'No se encontró token en headers ni cookies'
       });
     }
     

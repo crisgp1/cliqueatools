@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const path = require('path');
 const { testConnection, sequelize } = require('./config/configDB');
 const routes = require('./routes');
+const mediasPublicRoutes = require('./controllers/mediasControllerPublic');
 
 // Configuración de seguridad para JWT
 if (!process.env.JWT_SECRET) {
@@ -35,6 +36,9 @@ if (process.env.NODE_ENV === 'development') {
 
 // Servir archivos estáticos si es necesario
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Ruta pública para pruebas de Cloudinary sin autenticación
+app.use('/api/media-test', mediasPublicRoutes);
 
 // Middleware para redirigir solicitudes sin el prefijo /api
 app.use((req, res, next) => {

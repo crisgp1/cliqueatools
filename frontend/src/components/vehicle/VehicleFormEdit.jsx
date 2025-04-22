@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { IoCheckmarkCircleOutline } from 'react-icons/io5';
 import { formatCurrency, validateVehicle, getCurrentYear } from './VehicleUtils';
-import VehicleImageUpload from './VehicleImageUpload';
+import VehicleImageUpload from './VehicleImageUploadWrapper';
 
 /**
  * Componente que muestra un formulario para editar un vehículo existente
